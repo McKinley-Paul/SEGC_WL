@@ -8,3 +8,9 @@ git push
 cd ~/.../segc_wl
 git remote -v # should show fetch and push
 git pull origin main
+
+# to make a branch:
+git checkout -b my-new-branch
+# this creates the branch and switches you onto it
+git push -u origin my-new-branch
+# the -u makes future git push and git pull default to this branch

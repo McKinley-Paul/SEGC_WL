@@ -1,9 +1,9 @@
 using StaticArrays
 
 include("utils_module.jl")
-using .UtilsModule
 include("lj_module.jl")
-using .LJ_Module
+using .utils_module
+using .lj_module
 
 ########################################### INITIALIZATION ######################################################################################
 
