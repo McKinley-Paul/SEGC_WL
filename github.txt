@@ -1,5 +1,10 @@
-# After you’ve edited some code
+# After you’ve edited some code and want to push the change
 git status
 git add .
 git commit -m "Describe what changed"
 git push
+
+# now if you want to sync your local code with the github one online:
+cd ~/.../segc_wl
+git remote -v # should show fetch and push
+git pull origin main
