@@ -8,14 +8,14 @@ using .lj_module
 ########################################### INITIALIZATION ######################################################################################
 
 #Grand canonical/ SEGC variables
-const N_max= 4 # maximum number of atoms in the simulation
-const N_min = 0 # minimum number of atoms in simulation
-const T_σ = 1 # temperature for Q(N,V,T,λ) in lennard jones units
-# box length and volume are read in from initial configuration file
+# const N_max= 4 # maximum number of atoms in the simulation
+# const N_min = 0 # minimum number of atoms in simulation
+# const T_σ = 1 # temperature for Q(N,V,T,λ) in lennard jones units
+# # box length and volume are read in from initial configuration file
 
-λ = 0 # λ is what I am using for the fractional particle number, desgranges et al uses "l" for this
-λ_max = 99 # maximum value lambda can take, equivalent of M-1 in desgranges et al because λ=100 is the same as λ=0
-r_frac_box = @MArray [0.0,0.0,0.0] # location of fractional particle in box units, good use case for static array because it is a short vector, r_frac_box = [x,y,z]. but mutable so instead of @SArray we use @MArray
+#λ = 0 # λ is what I am using for the fractional particle number, desgranges et al uses "l" for this
+# λ_max = 99 # maximum value lambda can take, equivalent of M-1 in desgranges et al because λ=100 is the same as λ=0
+#r_frac_box = @MArray [0.0,0.0,0.0] # location of fractional particle in box units, good use case for static array because it is a short vector, r_frac_box = [x,y,z]. but mutable so instead of @SArray we use @MArray
 
 
 #= we are using allen and tildesly's initialize.py to generate our starting config
@@ -23,36 +23,36 @@ it prints the number of atoms on the first line, and the box length on the secon
 The atomic coordinates (x,y,z) are row vectors starting on the third line.
 =#
 
-filename = "cnf.inp"
-N,L_σ,r_σ = load_configuration(filename) # loads in N (the current number of atoms), L (the box length), and r (3xN array of particle positions) from allen and tildesly
+# filename = "cnf.inp"
+# N,L_σ,r_σ = load_configuration(filename) # loads in N (the current number of atoms), L (the box length), and r (3xN array of particle positions) from allen and tildesly
 # the σ in L_σ and r_σ denotes that these quantities are in the units from the input file, in this case the natural Lennard jones units but perhaps in the future HS units or angstroms even
-r_box = r_σ ./ L_σ # converting to "box units" by dividing the positions by the length of the box. Now r_i ∈ [-0.5,0.5]^3 because inputs are centered around 0,0
-r_box .= r_box .- round.(r_box) # periodic conditions, forces any atoms outside the box to wrap around and go back in
-min_distance,particle_1,particle_2 = min_config_distance(r_box)
-println("Minimum distance in box units (L_box=1) between particles in the initial configuration is: ",min_distance, " between particles ",particle_1, " and ", particle_2)
-println("This is compared to length of σ in box units which is: ", 1/L_σ)
+# r_box = r_σ ./ L_σ # converting to "box units" by dividing the positions by the length of the box. Now r_i ∈ [-0.5,0.5]^3 because inputs are centered around 0,0
+# r_box .= r_box .- round.(r_box) # periodic conditions, forces any atoms outside the box to wrap around and go back in
+# min_distance,particle_1,particle_2 = min_config_distance(r_box)
+# println("Minimum distance in box units (L_box=1) between particles in the initial configuration is: ",min_distance, " between particles ",particle_1, " and ", particle_2)
+# println("This is compared to length of σ in box units which is: ", 1/L_σ)
 
-L_squared_σ = L_σ*L_σ # squared length of box in potential natural / lennard jones units, used inside potential energy evaluation
-r_cut_σ  = 3 # cutoff distance of 3σ
-r_cut_box = r_cut_σ/L_σ
-r_cut_squared_box = r_cut_box*r_cut_box
+#L_squared_σ = L_σ*L_σ # squared length of box in potential natural / lennard jones units, used inside potential energy evaluation
+# r_cut_σ  = 3 # cutoff distance of 3σ
+# r_cut_box = r_cut_σ/L_σ
+# r_cut_squared_box = r_cut_box*r_cut_box
 
-V_σ = L_σ^3
-if N != N_max
-    throw(ArgumentError("Input mismatch: input config has $N atoms but N_max is $N_max, you want to start the simulation in the densest configuration"))
-end
+#V_σ = L_σ^3
+# if N != N_max
+#     throw(ArgumentError("Input mismatch: input config has $N atoms but N_max is $N_max, you want to start the simulation in the densest configuration"))
+# end
 
-println()
-println("           Starting SEGC Wang Landau Simulation        ")
-println("T* = ", T_σ, "")
-println("V = ", V_σ, "σ^3") 
-println("Box Length L = ", L_σ, "σ")
-println("Nmax = ", N_max)
-println("Nmin = ", N_min)
-println("λmax = ", λ_max)
+# println()
+# println("           Starting SEGC Wang Landau Simulation        ")
+# println("T* = ", T_σ, "")
+# println("V = ", V_σ, "σ^3") 
+# println("Box Length L = ", L_σ, "σ")
+# println("Nmax = ", N_max)
+# println("Nmin = ", N_min)
+# println("λmax = ", λ_max)
 
 Λ_σ = argon_deBroglie(T_σ) # debroglie wavelength in σ LJ units but this IS SPECIFIC TO the lennard jones model of ARGON
-println("Due to the occurence of Λ in the metropolis criterion, this simulation cannot be fully carried out for lennard jonesium and is here specific to Argon")
+#println("Due to the occurence of Λ in the metropolis criterion, this simulation cannot be fully carried out for lennard jonesium and is here specific to Argon")
 
 # Wang Landau variables
 logf = 1 # natural log of f, the modification factor in the Wang Landau scheme which is initiall set to f = the euler constant
