@@ -3,9 +3,20 @@ using StaticArrays
 include("initialization_module.jl")
 using .initialization_module
 
+include("utils_module.jl") # even though only initialization_module is used here, i had to do these to export them in this file so they are public facing and can be tested in /test/
+using .utils_module
+include("lj_module.jl")
+using .lj_module
+
 # this module contains the meat of the package including run_simulation and the various
 # High Level Wang Landau Monte Carlo functions. 
 export run_simulation
+
+export 
+    utils_module,
+    initialization_module,
+    lj_module
+
 
 
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars)

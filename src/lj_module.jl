@@ -8,9 +8,9 @@ function argon_deBroglie(T_σ::Real)
     # computes de broglie wavelength for the LJ model of Argon at a given input reduced temperature T_σ = kB T / ϵ
 
     # -- physical constants (SI)
-    const h_Js  = 6.62607015e-34      # Planck constant, J s
-    const kB_J_K = 1.380649e-23        # Boltzmann constant, J/K
-    const amu_kg = 1.66053906660e-27  # atomic mass unit, kg
+    h_Js  = 6.62607015e-34      # Planck constant, J s
+    kB_J_K = 1.380649e-23        # Boltzmann constant, J/K
+    amu_kg = 1.66053906660e-27  # atomic mass unit, kg
 
     # -- Argon LJ parameters (typical)
     ϵ_over_kB_K = 117.05              # epsilon / k_B (K)
@@ -45,6 +45,7 @@ end #E12_LJ
 function E12_frac_LJ(rij_squared_σ,λ,λ_max)
     #= computes interaction between fractional particle and normal LJ particle according to equation 16 of Desgranges 2016. Note that `M` in Desgranges = λ_max + 1 in our notation
     returns energy in lennard jones units
+    # assumes that rij_squared_σ was computed using the correct minimum image PBC 
     =# 
     rij_σ = sqrt(rij_squared_σ) # sqrt is unavoidable here I think 
     M = λ_max + 1
@@ -168,13 +169,15 @@ function  λ_metropolis_pm1(λ,N,r_box,r_frac_box,
             factorial_prefactor = 1/N_proposed # only works for ±1
             E_old = potential_1_frac(r_box,r_frac_box,   λ   ,λ_max,N,L_squared_σ,r_cut_squared_box)
             i = size(r_proposed_box,2)
-            E_proposed = potential_1_normal(r_proposed_box,@view r_proposed_box[:,end],i,r_frac_proposed_box,λ_proposed,λ_max,N_proposed,L_squared_σ,r_cut_squared_box)
+            new_full_particle = @view r_proposed_box[:,end]
+            E_proposed = potential_1_normal(r_proposed_box,new_full_particle,i,r_frac_proposed_box,λ_proposed,λ_max,N_proposed,L_squared_σ,r_cut_squared_box)
                     
         elseif N > N_proposed # particle destroyed so λ = 0 and λ_proposed = 99
             # old energy is energy of destroyed particle with rest of full particles 
             # new configurational energy is interaction of fractional particle with others
             factorial_prefactor = N # only works for ±1
-            E_old = potential_1_normal(r_box,@view r_box[:,idx_deleted],idx_deleted,r_frac_box,λ,λ_max,N,L_squared_σ,r_cut_squared_box)
+            destroyed_particle = @view r_box[:,idx_deleted]
+            E_old = potential_1_normal(r_box,destroyed_particle,idx_deleted,r_frac_box,λ,λ_max,N,L_squared_σ,r_cut_squared_box)
             E_proposed = potential_1_frac(r_proposed_box,r_frac_proposed_box,   λ_proposed   ,λ_max,N_proposed,L_squared_σ,r_cut_squared_box)
         
         end # ΔN logic 

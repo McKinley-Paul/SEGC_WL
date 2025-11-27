@@ -1,9 +1,10 @@
 module utils_module
 using StaticArrays
+using Random
 # This module contains stuff general to the monte carlo or wang landau process
 export euclidean_distance, min_config_distance, euclidean_distance_squared_pbc, translate_by_random_vector, metropolis
 
-function euclidean_distance(ri,rj)
+function euclidean_distance(ri::Vector{Float64},rj::Vector{Float64})::Float64
     # computes the euclidean distance between ri and rj. chatgpt says doing this manually in this way is the fastest b/c it avoids allocations 
     # outputs r = √(Δx^2 +Δy^2 Δz^2 )
     Δx = ri[1]-rj[1]
@@ -13,7 +14,7 @@ function euclidean_distance(ri,rj)
     return(rij)
 end # euclidean distance
 
-function min_config_distance(r)
+function min_config_distance(r::Matrix{Float64})::Tuple{Float64,Int64,Int64}
     # checks each pairwise distance in r and returns the minimum distance and the indices of the particles that that distance is between
     # so the user can identify if there is overlap or not. Needs to be called after renormalization to box units
     # and periodic boundary assurances are applied
@@ -41,7 +42,7 @@ function min_config_distance(r)
     return(min_distance,i_min,j_min)
 end #min_config_distance(r)
 
-function euclidean_distance_squared_pbc(ri_box,rj_box)
+function euclidean_distance_squared_pbc(ri_box::Vector{Float64},rj_box::Vector{Float64})::Float64
     # computes the euclidean squared distance between ri and rj.  doing this manually in this way may be the fastest b/c it "avoids allocations" but im not sure
     # does so assuming ri and rj are in box units for periodic boundary conditions
     # outputs r2 = Δx^2 +Δy^2 Δz^2
@@ -60,7 +61,7 @@ function euclidean_distance_squared_pbc(ri_box,rj_box)
 end # euclidean distance squared
 
 
-function translate_by_random_vector(r,δr_max,rng=MersenneTwister())
+function translate_by_random_vector(r::Vector{Float64},δr_max::Float64,rng::AbstractRNG=MersenneTwister())::Vector{Float64}
     # returns a new vector translated by a random amount less than √3*(δr_max) in a random direction. Does not apply PBC
     # note that δr_max is the max that any x,y,z component can move
     ζ =  @MArray (rand(rng,3)) #Three uniform random numbers in [0,1)
@@ -70,7 +71,7 @@ function translate_by_random_vector(r,δr_max,rng=MersenneTwister())
     return(r_new)
 end # translate_by_random_vector
 
-function metropolis(ΔE,T_σ,rng=MersenneTwister())
+function metropolis(ΔE::Float64,T_σ::Float64,rng=MersenneTwister())::Bool
     # in the case of a translational move, the acceptance criteria reduces to the standard metropolis one. Assumes ΔE and T_σ have LJ units (both have energy units)
     exponent = -1*ΔE/T_σ 
 
