@@ -134,7 +134,7 @@ end # potential_1_frac
 function  λ_metropolis_pm1(λ,N,r_box,r_frac_box,
                         λ_proposed, N_proposed, r_proposed_box, r_frac_proposed_box,idx_deleted,
                         logQ_λN, Λ_σ,V_σ,T_σ,
-                        λ_max,L_squared_σ,r_cut_squared_box)
+                        λ_max,L_squared_σ,r_cut_squared_box, rng=MersenneTwister())
 
         # MAKES SOME SIMPLIFYING ASSUMPTIONS THAT ONLY WORK WHEN LAMBDA CAN ONLY CHANGE BY ±1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -185,7 +185,7 @@ function  λ_metropolis_pm1(λ,N,r_box,r_frac_box,
         if prob_ratio > 1
             return(true)
         else
-            ζ = rand()
+            ζ = rand(rng)
             accept = (prob_ratio > ζ)   #boolean
             return(accept)
         end

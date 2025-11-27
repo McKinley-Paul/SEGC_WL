@@ -191,10 +191,10 @@ The atomic coordinates (x,y,z) are row vectors starting on the third line.
     #     end
     # end
     # break
-end
+# end
 
-println("Wang Landau converged, logf has reached ", logf, " and convergence is achieved when logf reaches ", logf_convergence_threshold)
-println("Total translation moves proposed: ", translation_moves_proposed, ", translation moves accepted: ", translation_moves_accepted, ", Acceptance ratio: ", translation_moves_accepted/translation_moves_proposed)
-println("Total λ moves proposed: ", λ_moves_proposed, ", λ moves accepted: ", λ_moves_accepted, ", Acceptance ratio: ", λ_moves_accepted/λ_moves_proposed)
-println("Partition function logQ_λN:")
-println(logQ_λN)
+# println("Wang Landau converged, logf has reached ", logf, " and convergence is achieved when logf reaches ", logf_convergence_threshold)
+# println("Total translation moves proposed: ", translation_moves_proposed, ", translation moves accepted: ", translation_moves_accepted, ", Acceptance ratio: ", translation_moves_accepted/translation_moves_proposed)
+# println("Total λ moves proposed: ", λ_moves_proposed, ", λ moves accepted: ", λ_moves_accepted, ", Acceptance ratio: ", λ_moves_accepted/λ_moves_proposed)
+# println("Partition function logQ_λN:")
+# println(logQ_λN)

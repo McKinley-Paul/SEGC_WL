@@ -1,4 +1,5 @@
 module utils_module
+using StaticArrays
 # This module contains stuff general to the monte carlo or wang landau process
 export euclidean_distance, min_config_distance, euclidean_distance_squared_pbc, translate_by_random_vector, metropolis
 
@@ -59,17 +60,17 @@ function euclidean_distance_squared_pbc(ri_box,rj_box)
 end # euclidean distance squared
 
 
-function translate_by_random_vector(r,δr_max)
+function translate_by_random_vector(r,δr_max,rng=MersenneTwister())
     # returns a new vector translated by a random amount less than √3*(δr_max) in a random direction. Does not apply PBC
     # note that δr_max is the max that any x,y,z component can move
-    ζ =  @MArray (rand(3)) #Three uniform random numbers in [0,1)
+    ζ =  @MArray (rand(rng,3)) #Three uniform random numbers in [0,1)
     ζ .= 2.0 .*ζ .- 1.0 # now in range [-1,+1]
     ζ .= ζ*δr_max       # now in range  [-δr_max,δr_max]
     r_new = r .+ ζ
     return(r_new)
 end # translate_by_random_vector
 
-function metropolis(ΔE,T_σ)
+function metropolis(ΔE,T_σ,rng=MersenneTwister())
     # in the case of a translational move, the acceptance criteria reduces to the standard metropolis one. Assumes ΔE and T_σ have LJ units (both have energy units)
     exponent = -1*ΔE/T_σ 
 
@@ -78,7 +79,7 @@ function metropolis(ΔE,T_σ)
     elseif exponent > 0 # downhill, accept without evaluating due to min(1,e^exponent) and e^exponent > 1 if exponent > 0 
         return(true)
     else 
-        ζ = rand() # random number between zero and 1
+        ζ = rand(rng) # random number between zero and 1
         accept = (exp(exponent) > ζ)   #boolean
         return(accept)
     end 

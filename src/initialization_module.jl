@@ -1,10 +1,11 @@
 module initialization_module
 include("utils_module.jl")
-using utils_module
+using .utils_module
 
 using StaticArrays
 using Printf
 using JLD2
+using Random
 
 export microstate,SimulationParams, init_microstate,check_inputs, print_simulation_params,WangLandauVars,init_WangLandauVars, initialization_check, save_wanglandau_jld2, save_microstate_jld2,load_microstate_jld2, load_wanglandau_jld2
 

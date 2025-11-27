@@ -1,8 +1,11 @@
 module segc_wl
+using StaticArrays
+include("initialization_module.jl")
+using .initialization_module
+
 # this module contains the meat of the package including run_simulation and the various
 # High Level Wang Landau Monte Carlo functions. 
 export run_simulation
-
 
 
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars)
@@ -44,7 +47,7 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
     if i < μ.N # move normal particle
         ri_box = @view μ.r_box[:,i]
     
-        ri_proposed_box = translate_by_random_vector(ri_box, wl.δr_max_box) # Trial move to new position (in box=1 units)
+        ri_proposed_box = translate_by_random_vector(ri_box, wl.δr_max_box, sim.rng) # Trial move to new position (in box=1 units)
         ri_proposed_box .= ri_proposed_box .- round.(ri_proposed_box)   # PBC
         E_proposed =potential_1_normal(μ.r_box,ri_proposed_box,i,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
 
@@ -61,7 +64,7 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
         end
 
     else # move fractional particle
-        r_frac_proposed_box = translate_by_random_vector(μ.r_frac_box,wl.δr_max_box)
+        r_frac_proposed_box = translate_by_random_vector(μ.r_frac_box,wl.δr_max_box,sim.rng)
         r_frac_proposed_box .= r_frac_proposed_box .- round.(r_frac_proposed_box)
         if μ.λ == 0 # auto accept because if λ =0 , translational move of the fractional particle doesn't change energy
             μ.r_frac_box = r_frac_proposed_box
@@ -87,12 +90,12 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
     end 
 end# translation move
 
-function λ_move!(sim::SimulationParams,μ::micrstate,wl::WangLandauVars)
+function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars)
     # again wrote the body of this and all subfunctions before doing structure refactor, could rewrite because as of now it's ugly and verbose but if it works...
     # currently only implementing Δλ = ±1, can do CFMC/translational move style drawing from scaled uniform distribution if this doesnt work well
     wl.λ_moves_proposed += 1
 
-    λ_proposed = μ.λ + 2*rand(Bool) - 1 # change λ by ±1; can go out of our range, and can be -1 or 100 which is our signal to change N 
+    λ_proposed = μ.λ + 2*rand(sim.rng,Bool) - 1 # change λ by ±1; can go out of our range, and can be -1 or 100 which is our signal to change N 
 
     if -1 < λ_proposed ≤ sim.λ_max # < 99 for λ_max = 99 no change to N
         N_proposed = μ.N 
@@ -104,7 +107,7 @@ function λ_move!(sim::SimulationParams,μ::micrstate,wl::WangLandauVars)
         λ_proposed = sim.λ_max     
         N_proposed = μ.N-1
         
-        idx_deleted = rand(1:μ.N)
+        idx_deleted = rand(sim.rng,1:μ.N)
         cols = [1:idx_deleted-1; idx_deleted+1:size(μ.r_box,2)] # columns (particles) to keep 
         r_proposed_box = @view μ.r_box[:,cols]
         r_frac_proposed_box  = @view μ.r_frac_box[:,:]
@@ -115,7 +118,8 @@ function λ_move!(sim::SimulationParams,μ::micrstate,wl::WangLandauVars)
         N_proposed = μ.N+1
 
         r_proposed_box = hcat(μ.r_box, μ.r_frac_box) # add the fractional particle to the end of the list
-        r_frac_proposed_box = @MArray (rand(3) .- 0.5)
+        r_frac_proposed_box = @MArray rand(sim.rng, 3) # 3 componenets betwewen [0,1)
+        r_frac_proposed_box .-= 0.5 # shift so three components in correct domain [-0.5,0.5]
         idx_deleted = 0
     else
         throw("Error in λ move ΔN control flow")
@@ -127,7 +131,7 @@ function λ_move!(sim::SimulationParams,μ::micrstate,wl::WangLandauVars)
         accept = λ_metropolis_pm1(μ.λ,μ.N,μ.r_box,μ.r_frac_box,
                             λ_proposed, N_proposed, r_proposed_box, r_frac_proposed_box,idx_deleted,
                             wl.logQ_λN, sim.Λ_σ,sim.V_σ,sim.T_σ,
-                            sim.λ_max,sim.L_squared_σ,sim.r_cut_squared_box)
+                            sim.λ_max,sim.L_squared_σ,sim.r_cut_squared_box,sim.rng)
         if accept == true
             wl.λ_moves_accepted += 1
             μ.λ = λ_proposed
