@@ -7,7 +7,7 @@ using Printf
 using JLD2
 using Random
 
-export microstate,SimulationParams, init_microstate,check_inputs, print_simulation_params,WangLandauVars,init_WangLandauVars, initialization_check, save_wanglandau_jld2, save_microstate_jld2,load_microstate_jld2, load_wanglandau_jld2
+export microstate,SimulationParams, init_microstate,check_inputs, print_simulation_params,WangLandauVars,init_WangLandauVars, initialization_check, save_wanglandau_jld2, save_microstate_jld2,load_microstate_jld2, load_wanglandau_jld2, load_configuration
 
 mutable struct microstate # holds the variables of the actual current or proposed state
     N::Int64 # number of particles in the microstate
@@ -69,7 +69,8 @@ struct SimulationParams # immutable because structs are by default immutable in 
     r_cut_σ::Float64 # cutoff to stop evaluating LJ potential
 
     input_filename::String
-
+    save_directory_path::String #path to save variables to like binaries of microstate during checkpoints and after runs and so on
+    # usually want to use save_directory_path = @__DIR__x
     rng::AbstractRNG # used for seeding tests with random numbers via rng=Xoshiro(1234) or so on. For production runs, set rng=MersenneTwister()
     maxiter::Int64 # maximum monte carlo iterations, can set to 1 to test single steps
 
@@ -81,7 +82,7 @@ struct SimulationParams # immutable because structs are by default immutable in 
     r_cut_squared_box::Float64 # used for cutoff to avoid computing sqrts
 
     # Now using an "Inner Constructor" to compute the derived parameters from only the input ones
-    function SimulationParams(; N_max,N_min,T_σ,Λ_σ,λ_max,r_cut_σ,input_filename,rng=MersenneTwister(),maxiter=10^9) 
+    function SimulationParams(; N_max,N_min,T_σ,Λ_σ,λ_max,r_cut_σ,input_filename,save_directory_path,rng=MersenneTwister(),maxiter=10^9) 
         # the semicolon above in (; N_max ... ) makes it so all these are keyword arguments, not positional ones so you set them with like 'N_max=100' when initializing a SimulationParams struct
         # Compute derived quantities
         _, L_σ, _  = load_configuration(input_filename)
@@ -90,7 +91,7 @@ struct SimulationParams # immutable because structs are by default immutable in 
         r_cut_box = r_cut_σ/L_σ
         r_cut_squared_box = r_cut_box^2
 
-        new(N_max,N_min,T_σ,Λ_σ,λ_max,r_cut_σ,input_filename,rng,maxiter,
+        new(N_max,N_min,T_σ,Λ_σ,λ_max,r_cut_σ,input_filename,save_directory_path,rng,maxiter,
             L_σ,V_σ,L_squared_σ,r_cut_box ,r_cut_squared_box)
     end
 end # SimulationParams
@@ -109,8 +110,8 @@ end
 
 function init_WangLandauVars(λ_max::Int64,N_max::Int64,L_σ::Float64)::WangLandauVars
     logf = 1 
-    H_λN = zeros(Int64,λ_max,N_max)
-    logQ_λN=zeros(Float64,λ_max,N_max) 
+    H_λN = zeros(Int64,λ_max+1,N_max+1)
+    logQ_λN=zeros(Float64,λ_max+1,N_max+1) 
     δr_max_box = 0.15/L_σ
     wl = WangLandauVars(logf,H_λN,logQ_λN,0,0,0,0,δr_max_box)
     return(wl)
@@ -118,8 +119,8 @@ end
 
 function check_inputs(s::SimulationParams,μ::microstate)
     min_distance,particle_1,particle_2 = min_config_distance(μ.r_box)
-    println("Minimum distance in box units (L_box=1) between particles in the initial configuration is: ",min_distance, " between particles ",particle_1, " and ", particle_2)
-    println("This is compared to length of σ in box units which is: ", 1/s.L_σ)
+    println("Minimum distance in box units (L_box=1) between particles in the initial configuration is: ",round(min_distance,digits=3), " between particles ",particle_1, " and ", particle_2)
+    println("This is compared to length of σ in box units which is: ", round(1/s.L_σ,digits=3))
 
     if μ.N != s.N_max
         throw(ArgumentError("Input mismatch: input config has $(μ.N) atoms but N_max is $(s.N_max), you want to start the simulation in the densest configuration"))
@@ -143,8 +144,7 @@ function print_simulation_params(params::SimulationParams,start::Bool=true)
     @printf("λmax = %d\n", params.λ_max)
 
     @printf("r_cut = %.4f σ\n", params.r_cut_σ)
-
-    println()
+    println("Directory files saved in: ", params.save_directory_path)
 end #print_simulation_params
 
 function print_microstate(μ::microstate,print_r::Bool=false)
@@ -168,8 +168,9 @@ function initialization_check(sim::SimulationParams, μ::microstate,wl::WangLand
 end
 
 
-function save_wanglandau_jld2(wl::WangLandauVars, filename::String)
-    jldsave(filename; wl=wl)
+function save_wanglandau_jld2(wl::WangLandauVars,sim::SimulationParams, filename::String)
+    filepath = joinpath(sim.save_directory_path,filename)
+    jldsave(filepath; wl=wl)
 end
 
 function load_wanglandau_jld2(filename::String)::WangLandauVars
@@ -179,8 +180,9 @@ end
 # save_wanglandau_jld2(wl, "checkpoint.jld2")
 # wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
 
-function save_microstate_jld2(μ::microstate, filename::String)
-    jldsave(filename; μ=μ)
+function save_microstate_jld2(μ::microstate,sim::SimulationParams,  filename::String)
+    filepath = joinpath(sim.save_directory_path,filename)
+    jldsave(filepath; μ=μ)
 end
 
 function load_microstate_jld2(filename::String)::microstate

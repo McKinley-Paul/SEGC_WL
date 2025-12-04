@@ -1,10 +1,12 @@
 module lj_module
 using ..utils_module   # parent module, one level up
-
+using Random
 # this module contains system specific stuff to the argon lennard jones system
-export argon_deBroglie, E_12_LJ, E12_frac_LJ, potential_1_normal, potential_1_frac, λ_metropolis_pm1
+export argon_deBroglie, E_12_LJ, E_12_frac_LJ, potential_1_normal, potential_1_frac, λ_metropolis_pm1
 
-function argon_deBroglie(T_σ::Real)
+#  ✅  == checked in \test 
+
+function argon_deBroglie(T_σ::Float64)::Float64 #  ✅ 
     # computes de broglie wavelength for the LJ model of Argon at a given input reduced temperature T_σ = kB T / ϵ
 
     # -- physical constants (SI)
@@ -32,7 +34,7 @@ function argon_deBroglie(T_σ::Real)
     return (Λ_σ)
 end # argon debroglie
 
-function E_12_LJ(rij_squared_σ)
+function E_12_LJ(rij_squared_σ::Float64)::Float64 #  ✅ 
     #= Computes the interaction energy between two normal lennard jones particles in LJ units 
     rij_squared_\sigma = squared distance between two particles in lennard jones \sigma =1 units
     =# 
@@ -42,7 +44,7 @@ function E_12_LJ(rij_squared_σ)
 
 end #E12_LJ
 
-function E12_frac_LJ(rij_squared_σ,λ,λ_max)
+function E_12_frac_LJ(rij_squared_σ::Float64,λ::Int64,λ_max::Int64)::Float64 #  ✅ 
     #= computes interaction between fractional particle and normal LJ particle according to equation 16 of Desgranges 2016. Note that `M` in Desgranges = λ_max + 1 in our notation
     returns energy in lennard jones units
     # assumes that rij_squared_σ was computed using the correct minimum image PBC 
@@ -58,7 +60,7 @@ function E12_frac_LJ(rij_squared_σ,λ,λ_max)
 end #E12_frac_lj 
 
 
-function potential_1_normal(r_box,ri_box,i,r_frac_box,λ,λ_max,N,L_squared_σ,r_cut_squared_box)
+function potential_1_normal(r_box::AbstractMatrix{Float64},ri_box::AbstractVector{Float64},i::Int64,r_frac_box::AbstractVector{Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64)::Float64 #  ✅ 
     #= Calculates the sum of the interaction potential between 1 special particle labelled i (e.g. the particle involved in a proposal move) in the r list and all others including the fractional particle
     Inputs:
         -r_box (Array of Float64s): 3xN position matrix of N normal particles in box units
@@ -84,7 +86,7 @@ function potential_1_normal(r_box,ri_box,i,r_frac_box,λ,λ_max,N,L_squared_σ,r
             if rij_squared_box < r_cut_squared_box # only evaluate potential if pair is inside cutoff distance
                 rij_squared_σ = rij_squared_box  * L_squared_σ   # convert to potential natural units (i.e. lennard jones) to compute the potentials see allen and Tildesly one Note note for explanation why
                 if rij_squared_σ >  0.5 # close to overlap threshold given by allen and tildesly of potential E > 100, ours is E > 224
-                    E_int_σ = E_int_σ + E12_LJ(rij_squared_σ)
+                    E_int_σ = E_int_σ + E_12_LJ(rij_squared_σ)
                 else # if particles overlap quit early and return a huge energy
                     return(typemax(Float64))
                 end 
@@ -94,16 +96,18 @@ function potential_1_normal(r_box,ri_box,i,r_frac_box,λ,λ_max,N,L_squared_σ,r
 
     # adding fractional interaction
     rij_squared_box = euclidean_distance_squared_pbc(ri_box,r_frac_box)
-    if rij_squared_box < r_cut_squared_box
+    if (rij_squared_box < r_cut_squared_box) && (rij_squared_box != 0.0)# if the distance is zero, E_12_frac_LJ returns NaN
         rij_squared_σ = rij_squared_box  * L_squared_σ  
-        E_int_σ = E_int_σ + E12_frac_LJ(rij_squared_σ,λ,λ_max)
+        E_int_σ = E_int_σ + E_12_frac_LJ(rij_squared_σ,λ,λ_max)
+    elseif rij_squared_box == 0.0 # if this is the case need to just reject this config because LJ involves 1/rij which if rij=0 is undefined
+            return(typemax(Float64))
     end
     
     return(E_int_σ)
 
 end # potential_1_normal
 
-function potential_1_frac(r_box,r_frac_box,λ,λ_max,N,L_squared_σ,r_cut_squared_box)
+function potential_1_frac(r_box::AbstractMatrix{Float64},r_frac_box::AbstractArray{Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64)::Float64
     #= this function calculates the sum of all interactions between the fractional particle and all the normal particles
         -r_box (Array of Float64s): 3xN position matrix of N normal particles in box units
         - r_frac_box (static array of Float64s): location of fractional particle in box units
@@ -120,10 +124,12 @@ function potential_1_frac(r_box,r_frac_box,λ,λ_max,N,L_squared_σ,r_cut_square
     for j in 1:N
         rj_box = @view r_box[:,j]
         rij_squared_box = euclidean_distance_squared_pbc(r_frac_box,rj_box)
-        if rij_squared_box < r_cut_squared_box
+        if (rij_squared_box < r_cut_squared_box) && (rij_squared_box > 0) # if rij_squared_box ==0 E_12_frac_LJ returns a NaN
             rij_squared_σ = rij_squared_box  * L_squared_σ 
             # here we would check for overlap normally and reject but we will not do this for the fractional particle because if λ=1 or something, could still have low energy if overlapped
-            E_int_σ = E_int_σ + E12_frac_LJ(rij_squared_σ,λ,λ_max)
+            E_int_σ = E_int_σ + E_12_frac_LJ(rij_squared_σ,λ,λ_max)
+        elseif rij_squared_box == 0 # if this is the case need to just reject (or get out of) this config because LJ involves 1/rij which if rij=0 is undefined/+infinity
+            return(typemax(Float64))
         end
     end
     return(E_int_σ)
@@ -132,10 +138,10 @@ end # potential_1_frac
 
 
 
-function  λ_metropolis_pm1(λ,N,r_box,r_frac_box,
-                        λ_proposed, N_proposed, r_proposed_box, r_frac_proposed_box,idx_deleted,
-                        logQ_λN, Λ_σ,V_σ,T_σ,
-                        λ_max,L_squared_σ,r_cut_squared_box, rng=MersenneTwister())
+function  λ_metropolis_pm1(λ::Int64,N::Int64,r_box::AbstractMatrix{Float64},r_frac_box::AbstractVector{Float64},
+                        λ_proposed::Int64, N_proposed::Int64, r_proposed_box::AbstractMatrix{Float64}, r_frac_proposed_box::AbstractVector{Float64},idx_deleted::Int64,
+                        logQ_λN::Matrix{Float64}, Λ_σ::Float64,V_σ::Float64,T_σ::Float64,
+                        λ_max::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64, rng::AbstractRNG=MersenneTwister())::Bool #  ✅ 
 
         # MAKES SOME SIMPLIFYING ASSUMPTIONS THAT ONLY WORK WHEN LAMBDA CAN ONLY CHANGE BY ±1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -145,7 +151,7 @@ function  λ_metropolis_pm1(λ,N,r_box,r_frac_box,
         # assumes that you have already checked that N_proposed is in bounds  (N_min ≤ N_proposed ≤ N_max)
 
         # first we compute the multiplicative prefactor term involving Q,V,Λ in eqns 10-12-- because the N! terms can cause overflow, we only compute them once we know something about N old vs new
-        logQ_diff = logQ_λN[λ,N] - logQ_λN[λ_proposed,N_proposed]
+        logQ_diff = logQ_λN[λ+1,N+1] - logQ_λN[λ_proposed+1,N_proposed+1]
         partition_ratio = exp(logQ_diff)
         if (λ > 0 && λ_proposed > 0) || (λ == 0 && λ_proposed == 0)
             V_Λ_prefactor = V_σ^(N_proposed-N) * Λ_σ^(3*N - 3*N_proposed)
@@ -156,6 +162,7 @@ function  λ_metropolis_pm1(λ,N,r_box,r_frac_box,
         end
 
         # now we compute the exponential part of the criterion having to do with the configurational potential energy
+        # and the N-dependent factorial prefactor factorial_prefactor = Nold!/Nnew!
 
         if N==N_proposed # λ changed so change in configurational energy only has to do with fractional particle old vs new
             # following equation 10 desgranges

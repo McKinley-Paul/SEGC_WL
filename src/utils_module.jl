@@ -3,8 +3,8 @@ using StaticArrays
 using Random
 # This module contains stuff general to the monte carlo or wang landau process
 export euclidean_distance, min_config_distance, euclidean_distance_squared_pbc, translate_by_random_vector, metropolis
-
-function euclidean_distance(ri::Vector{Float64},rj::Vector{Float64})::Float64
+#  ✅  == checked in /test
+function euclidean_distance(ri::AbstractVector{Float64},rj::AbstractVector{Float64})::Float64 #  ✅ 
     # computes the euclidean distance between ri and rj. chatgpt says doing this manually in this way is the fastest b/c it avoids allocations 
     # outputs r = √(Δx^2 +Δy^2 Δz^2 )
     Δx = ri[1]-rj[1]
@@ -42,7 +42,7 @@ function min_config_distance(r::Matrix{Float64})::Tuple{Float64,Int64,Int64}
     return(min_distance,i_min,j_min)
 end #min_config_distance(r)
 
-function euclidean_distance_squared_pbc(ri_box::Vector{Float64},rj_box::Vector{Float64})::Float64
+function euclidean_distance_squared_pbc(ri_box::AbstractVector{Float64},rj_box::AbstractVector{Float64})::Float64 #  ✅ 
     # computes the euclidean squared distance between ri and rj.  doing this manually in this way may be the fastest b/c it "avoids allocations" but im not sure
     # does so assuming ri and rj are in box units for periodic boundary conditions
     # outputs r2 = Δx^2 +Δy^2 Δz^2
@@ -61,7 +61,7 @@ function euclidean_distance_squared_pbc(ri_box::Vector{Float64},rj_box::Vector{F
 end # euclidean distance squared
 
 
-function translate_by_random_vector(r::Vector{Float64},δr_max::Float64,rng::AbstractRNG=MersenneTwister())::Vector{Float64}
+function translate_by_random_vector(r::AbstractVector{Float64},δr_max::Float64,rng::AbstractRNG=MersenneTwister())::Vector{Float64} #  ✅ 
     # returns a new vector translated by a random amount less than √3*(δr_max) in a random direction. Does not apply PBC
     # note that δr_max is the max that any x,y,z component can move
     ζ =  @MArray (rand(rng,3)) #Three uniform random numbers in [0,1)
@@ -71,7 +71,7 @@ function translate_by_random_vector(r::Vector{Float64},δr_max::Float64,rng::Abs
     return(r_new)
 end # translate_by_random_vector
 
-function metropolis(ΔE::Float64,T_σ::Float64,rng=MersenneTwister())::Bool
+function metropolis(ΔE::Float64,T_σ::Float64,rng=MersenneTwister())::Bool #  ✅ 
     # in the case of a translational move, the acceptance criteria reduces to the standard metropolis one. Assumes ΔE and T_σ have LJ units (both have energy units)
     exponent = -1*ΔE/T_σ 
 

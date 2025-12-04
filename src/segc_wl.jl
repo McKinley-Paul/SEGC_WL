@@ -7,10 +7,10 @@ include("utils_module.jl") # even though only initialization_module is used here
 using .utils_module
 include("lj_module.jl")
 using .lj_module
-
+# ✅  = unit tests for function exist in /tests/
 # this module contains the meat of the package including run_simulation and the various
 # High Level Wang Landau Monte Carlo functions. 
-export run_simulation
+export run_simulation!, translation_move!,λ_move!,update_wl!, post_run
 
 export 
     utils_module,
@@ -22,7 +22,7 @@ export
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars)
     f_convergence_threshold = 10^(-8)
     logf_convergence_threshold = log(f_convergence_threshold)
-    while wl.logf ≥ logf_convergence_threshold && (wl.λ_moves_proposed + wl.translation_moves_proposeds) < sim.maxiter
+    while (wl.logf ≥ logf_convergence_threshold ) && ( (wl.λ_moves_proposed + wl.translation_moves_proposed) < sim.maxiter)
         ζ = rand(sim.rng)
         if ζ < 0.75                         # propose translational moves 75% of the time 
             translation_move!(sim,μ,wl)
@@ -33,15 +33,15 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
         update_wl!(wl,μ)
 
         # check flatness and save state:
-        if (wl.λ_moves_proposed + wl.translation_moves_proposeds) % 1000 ==0 # check flatness only every 1,000 cycles
+        if (wl.λ_moves_proposed + wl.translation_moves_proposed) % 1000 ==0 # check flatness only every 100 cycles
             min = minimum(wl.H_λN)
             if min ≥  1000 # this is our flatness criteria
-                wl.H_λN = zeros(Int64,λ_max,N_max)
+                wl.H_λN = zeros(Int64,λ_max+1,N_max+1)
                 wl.logf = 0.5*logf
             end
-            if (wl.λ_moves_proposed + wl.translation_moves_proposeds) % 50000 ==0 # print every 10,000 moves 
-                save_wanglandau_jld2(wl, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
-                save_microstate_jld2(μ, "microstate_checkpoing.jld2")
+            if (wl.λ_moves_proposed + wl.translation_moves_proposed) % 50000 ==0 # save checkpoint every 50,000 moves 
+                save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+                save_microstate_jld2(μ,sim, "microstate_checkpoing.jld2")
             end
         end #flatness/printing
 
@@ -50,7 +50,7 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
     #return(wl) is this necessary?
 end #run_simulation
 
-function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars)
+function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars) #✅
     # wrote the body of all these functions before refactoring into structs, could rewrite at some point because ugly
     wl.translation_moves_proposed += 1
 
@@ -65,13 +65,13 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
         if E_proposed == typemax(Float64) # check overlap
             nothing # reject the move and recount this state for histogram and partition function 
         else   
-                E_old =potential_1_normal(μ.r_box,ri_box,i,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
-                ΔE = E_proposed - E_old 
-                accept = metropolis(ΔE,T_σ) 
-                if accept
-                    μ.r_box[:,i] = ri_proposed_box
-                    wl.translation_moves_accepted += 1
-                end
+            E_old =potential_1_normal(μ.r_box,ri_box,i,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
+            ΔE = E_proposed - E_old 
+            accept = metropolis(ΔE,sim.T_σ,sim.rng) 
+            if accept
+                μ.r_box[:,i] = ri_proposed_box
+                wl.translation_moves_accepted += 1
+            end
         end
 
     else # move fractional particle
@@ -85,7 +85,7 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
 
             E_old =potential_1_frac(μ.r_box,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box)
             ΔE = E_proposed - E_old 
-                accept = metropolis(ΔE,T_σ) 
+                accept = metropolis(ΔE,sim.T_σ) 
                 if accept
                     μ.r_frac_box = r_frac_proposed_box
                     wl.translation_moves_accepted += 1
@@ -108,7 +108,7 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars)
 
     λ_proposed = μ.λ + 2*rand(sim.rng,Bool) - 1 # change λ by ±1; can go out of our range, and can be -1 or 100 which is our signal to change N 
 
-    if -1 < λ_proposed ≤ sim.λ_max # < 99 for λ_max = 99 no change to N
+    if -1 < λ_proposed ≤ sim.λ_max # λ_proposed < 99 for λ_max = 99 no change to N
         N_proposed = μ.N 
         r_proposed_box = @view μ.r_box[:,:]
         r_frac_proposed_box  = @view μ.r_frac_box[:,:]
@@ -136,9 +136,7 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars)
         throw("Error in λ move ΔN control flow")
     end # ΔN control flow
 
-    if sim.N_min ≤ N_proposed ≤ sim.N_max # reject if N goes out of bounds for the sim
-        accept = false
-    else 
+    if sim.N_min ≤ N_proposed ≤ sim.N_max # implicitly reject if N goes out of bounds for the sim because no possibility of updating, skipping evalation here
         accept = λ_metropolis_pm1(μ.λ,μ.N,μ.r_box,μ.r_frac_box,
                             λ_proposed, N_proposed, r_proposed_box, r_frac_proposed_box,idx_deleted,
                             wl.logQ_λN, sim.Λ_σ,sim.V_σ,sim.T_σ,
@@ -153,19 +151,18 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars)
     end
 end
 
-
 function update_wl!(wl::WangLandauVars,μ::microstate)
-    wl.logQ_λN[μ.λ,μ.N] += wl.logf
-    wl.H_λN[μ.λ,μ.N] += 1
+    wl.logQ_λN[μ.λ+1,μ.N+1] += wl.logf
+    wl.H_λN[μ.λ+1,μ.N+1] += 1
 end #update_wl!
 
 function post_run(sim::SimulationParams,μ::microstate,wl::WangLandauVars)
-    println("Wang Landau converged or reached max int, logf has reached ", wl.logf, " and convergence is achieved when logf reaches ", log( 10^(-8) ) )
+    println("Wang Landau converged or reached max iterations, logf has reached ", wl.logf, " and convergence is achieved when logf reaches ", log( 10^(-8) ) )
     println("Iterations: ", (wl.translation_moves_proposed+wl.λ_moves_proposed), " with maxiters: ", sim.maxiter )
     println("Total translation moves proposed: ", wl.translation_moves_proposed, ", translation moves accepted: ", wl.translation_moves_accepted, ", Acceptance ratio: ", wl.translation_moves_accepted/wl.translation_moves_proposed)
     println("Total λ moves proposed: ", wl.λ_moves_proposed, ", λ moves accepted: ", wl.λ_moves_accepted, ", Acceptance ratio: ", wl.λ_moves_accepted/wl.λ_moves_proposed)
-    save_wanglandau_jld2(wl,"final_wl.jld2")
-    save_microstate_jld2(μ,"final_microstate.jld2")
+    save_wanglandau_jld2(wl,sim,"final_wl.jld2")
+    save_microstate_jld2(μ,sim,"final_microstate.jld2")
     println("Final Microstate and Wang Landau variables saved")
 end
 
