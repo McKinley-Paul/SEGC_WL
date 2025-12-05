@@ -356,7 +356,7 @@ println("")
         r_cut_σ = 3.,
         input_filename=input_path,
         save_directory_path= @__DIR__ , 
-        maxiter=2)
+        maxiter=1000)
 
     wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
 

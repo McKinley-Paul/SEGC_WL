@@ -7,7 +7,7 @@ using Printf
 using JLD2
 using Random
 
-export microstate,SimulationParams, init_microstate,check_inputs, print_simulation_params,WangLandauVars,init_WangLandauVars, initialization_check, save_wanglandau_jld2, save_microstate_jld2,load_microstate_jld2, load_wanglandau_jld2, load_configuration
+export microstate,SimulationParams,init_microstate,check_inputs, print_simulation_params, print_microstate,print_wl, WangLandauVars,init_WangLandauVars, initialization_check, save_wanglandau_jld2, save_microstate_jld2,load_microstate_jld2, load_wanglandau_jld2, load_configuration
 
 mutable struct microstate # holds the variables of the actual current or proposed state
     N::Int64 # number of particles in the microstate
@@ -155,11 +155,33 @@ function print_microstate(μ::microstate,print_r::Bool=false)
     if print_r 
         println("Positions of full particles in box units: ")
         display(μ.r_box)
-        println()
+
         println("Position of fractional particle:")
         display(μ.r_frac_box)
     end
 end #print_microstate
+
+function print_wl(wl::WangLandauVars,verbose=true)
+    println()
+    println("Wangl Landau Variables")
+    @printf("logf = %.4f\n", wl.logf)
+    @printf("λ_moves_proposed = %f\n", wl.λ_moves_proposed)
+    @printf("λ_moves_accepted = %f\n", wl.λ_moves_accepted)
+    @printf("λ acceptance ratio = %.4f\n", ( wl.λ_moves_accepted/wl.λ_moves_proposed) )
+
+    @printf("δr_max_box = %.4f\n", wl.δr_max_box)
+    @printf("translation_moves_proposed = %f\n", wl.translation_moves_proposed)
+    @printf("translation_moves_accepted = %f\n", wl.translation_moves_accepted)
+    @printf("translation acceptance ratio = %.4f\n", ( wl.translation_moves_accepted/wl.translation_moves_proposed) )
+
+    if verbose 
+        display("LogQ: ")
+        display(wl.logQ_λN)
+
+        display("Histogram λN")
+        display(wl.H_λN)
+    end
+end # print_wl
 
 function initialization_check(sim::SimulationParams, μ::microstate,wl::WangLandauVars)
     check_inputs(sim,μ) # tell user the min distance in config and similar things
