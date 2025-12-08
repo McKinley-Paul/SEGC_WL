@@ -362,10 +362,6 @@ println("")
 
     initialization_check(sim,μstate,wl)
 
-    ri_proposed_box = [-0.24540913937913525,0.2664861299205159,0.2639717200402171]
-    E_proposed =potential_1_normal(μstate.r_box,ri_proposed_box,2,μstate.r_frac_box,μstate.λ,sim.λ_max,μstate.N,sim.L_squared_σ,sim.r_cut_squared_box) 
-# above returned zero so need to debug this
-
     run_simulation!(sim,μstate,wl)
 
     post_run(sim,μstate,wl)

@@ -22,12 +22,12 @@ sim = SimulationParams(
     r_cut_σ = 3.,
     input_filename=input_path,
     save_directory_path= @__DIR__ , 
-    maxiter=00_000_000)
+    maxiter=100_000_000)
 
 wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
 
 initialization_check(sim,μstate,wl)
 
-run_simulation!(sim,μstate,wl)
+@time run_simulation!(sim,μstate,wl)
 
 post_run(sim,μstate,wl)

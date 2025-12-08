@@ -18,9 +18,8 @@ export
     lj_module
 
 
-
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars)
-    f_convergence_threshold = 10^(-8)
+    f_convergence_threshold = exp(10^(-8)) # Desgranges paper convergence criterion has a typo, this is from Original 2001 Landau paper which is presumably what Desgranges et. al. meant
     logf_convergence_threshold = log(f_convergence_threshold)
     while (wl.logf ≥ logf_convergence_threshold ) && ( (wl.λ_moves_proposed + wl.translation_moves_proposed) < sim.maxiter)
         ζ = rand(sim.rng)
@@ -45,10 +44,7 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
                 save_microstate_jld2(μ,sim, "microstate_checkpoing.jld2")
             end
         end #flatness/printing
-
     end # while logf ≥ logf_convergence_threshold
-
-    #return(wl) is this necessary?
 end #run_simulation
 
 function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars) #✅
