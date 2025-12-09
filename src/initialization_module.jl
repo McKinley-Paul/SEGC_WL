@@ -100,7 +100,7 @@ mutable struct WangLandauVars
     # WangLandauVars holds variables related to the wang landau monte carlo process that will change throughout the course of the simulation
     logf::Float64 # natural log of f, the modification factor in the Wang Landau scheme which is initiall set to f = the euler constant
     H_λN::Matrix{Int64} # histogram of number of times each (λ,N) pair has been visited.  λ_max rows, N_max columns.
-    logQ_λN::Matrix{Float64} # "density of states" in SEGC is the extended partition function Q(NVT,l) because V and T are fixed for given sim., they are left out of name, λ on rows and N on columns
+    logQ_λN::Matrix{Float64} # "density of states" in SEGC is the extended configuration integrals Q(NVT,l) because V and T are fixed for given sim., they are left out of name, λ on rows and N on columns
     translation_moves_proposed::Int64
     translation_moves_accepted::Int64
     λ_moves_proposed::Int64
