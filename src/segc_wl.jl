@@ -7,6 +7,8 @@ include("utils_module.jl") # even though only initialization_module is used here
 using .utils_module
 include("lj_module.jl")
 using .lj_module
+include("thermo_module.jl")
+using .thermo_module
 # ✅  = unit tests for function exist in /tests/
 # this module contains the meat of the package including run_simulation and the various
 # High Level Wang Landau Monte Carlo functions. 
@@ -15,7 +17,8 @@ export run_simulation!, translation_move!,λ_move!,update_wl!, post_run
 export 
     utils_module,
     initialization_module,
-    lj_module
+    lj_module,
+    thermo_module
 
 
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars)

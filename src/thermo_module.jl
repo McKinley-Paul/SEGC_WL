@@ -1,8 +1,8 @@
 module thermo_module
-using StaticArrays
-using Random
+include("initialization_module.jl")
+using .initialization_module
 # This module contains functions general to doing thermodynamics or stat mech including some thermodynamic post processing of the SEGC-WL found configurational integrals 
-export euclidean_distance, min_config_distance, euclidean_distance_squared_pbc, translate_by_random_vector, metropolis
+export correct_config_integrals
 #  ✅  == checked in /test
 
 function correct_config_integrals(wl::WangLandauVars)::Array{Float64}   

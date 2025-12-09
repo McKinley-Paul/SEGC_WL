@@ -8,6 +8,7 @@ using segc_wl   # or the module name inside segc_wl.jl
 using segc_wl.utils_module
 using segc_wl.initialization_module
 using segc_wl.lj_module
+using segc_wl.thermo_module
 
 input_path = "/Users/mckinleypaul/Documents/montecarlo/segc_wl/examples/4_atoms/4_atom_cnf.inp"
 μstate = init_microstate(filename=input_path)
@@ -31,3 +32,7 @@ initialization_check(sim,μstate,wl)
 @time run_simulation!(sim,μstate,wl)
 
 post_run(sim,μstate,wl)
+
+loqQ = correct_config_integrals(wl)
+
+println(logQ)
