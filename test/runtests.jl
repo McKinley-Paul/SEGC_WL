@@ -313,52 +313,43 @@ println("")
 println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Now Running Physics Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 println("")
 
-# @testset "4 atoms 1000 iters" begin
-#     # 4 atoms in FCC unit cell
-#     input_path = "/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/4_atom_cnf.inp"
-#     μstate = init_microstate(filename=input_path)
-#     T_σ = 1.0 
-#     Λ_σ = argon_deBroglie(T_σ)
-#     sim = SimulationParams(
-#         N_max=4,
-#         N_min=0,
-#         T_σ=T_σ,
-#         Λ_σ = Λ_σ,
-#         λ_max = 99,
-#         r_cut_σ = 3.,
-#         input_filename=input_path,
-#         save_directory_path= @__DIR__ ,
-#         maxiter=100)
+@testset "4 Atom Test of Q(N=1),Q(N=2)" begin
+    # simulation of up to 4 atoms with SEGC-WL currently takes about 15 seconds
+    # so lets run this 5 times for statistics
+    logQ_N1 = 0 
+    logQ_N2 = 0
+    for ii in 1:5
+        input_path = "/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/4_atom_cnf.inp"
+        μstate = init_microstate(filename=input_path)
+        T_σ = 1.0 
+        Λ_σ = argon_deBroglie(T_σ)
+        sim = SimulationParams(
+            N_max=4,
+            N_min=0,
+            T_σ=T_σ,
+            Λ_σ = Λ_σ,
+            λ_max = 99,
+            r_cut_σ = 3.,
+            input_filename=input_path,
+            save_directory_path= @__DIR__ , 
+            maxiter=100_000_000)
+        wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
+        #initialization_check(sim,μstate,wl)
+        run_simulation!(sim,μstate,wl)
+        # post_run(sim,μstate,wl)
+        logQ = correct_Q(wl)
+        logQ_N1 += logQ[2]
+        logQ_N2 += logQ[3]
+    end
+    logQ_N1 *= (1/5) # average value of Q(N=1,λ=0|V=512σ,T*=1) over five monte carlo runs
+    logQ_N2 *= (1/5)
 
-#     wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
-
-#     initialization_check(sim,μstate,wl)
-
-#     run_simulation!(sim,μstate,wl)
-
-#     post_run(sim,μstate,wl)
-
-# end
-    # # 4 atoms in FCC unit cell
-    # input_path = "/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/4_atom_cnf.inp"
-    # μstate = init_microstate(filename=input_path)
-    # T_σ = 1.0 
-    # Λ_σ = argon_deBroglie(T_σ)
-    # sim = SimulationParams(
-    #     N_max=4,
-    #     N_min=0,
-    #     T_σ=T_σ,
-    #     Λ_σ = Λ_σ,
-    #     λ_max = 99,
-    #     r_cut_σ = 3.,
-    #     input_filename=input_path,
-    #     save_directory_path= @__DIR__ , 
-    #     maxiter=1000)
-
-    # wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
-
-    # initialization_check(sim,μstate,wl)
-
-    # run_simulation!(sim,μstate,wl)
-
-    # post_run(sim,μstate,wl)
+    #= the technically and statistically best thing to do would be run the simulation m independent times - independent meaning they must start from different initializaiton states, which is not the FCC focused workflow we have now
+    Then observe the sample standard error from the m trials.  (from normal Standard Error = Standard Deviation/sqrt(m) formula)
+    then you would use that SE to form a confidence interval and assert the analytic value falls inside of it:
+        abs(mean_logQ - logQ_analytic) ≤ k *SE where k is the confidence interval such as k=1.96 corresponding to 95% confidence interval
+    can come back and do this later but because this is going to run often we're just going to do it quick and dirty:
+    =#
+    mathematica_logQ_N1 = 14.0055 # computed in /tests/tests.nb a mathematica notebook
+    @test logQ_N1 ≈ mathematica_logQ_N1 atol = (0.05*mathematica_logQ_N1)
+end
