@@ -1,9 +1,5 @@
-module lj_module
-using ..utils_module   # parent module, one level up
-using Random
 # this module contains system specific stuff to the argon lennard jones system
-export argon_deBroglie, E_12_LJ, E_12_frac_LJ, potential_1_normal, potential_1_frac, λ_metropolis_pm1
-
+using Random
 #  ✅  == checked in \test 
 
 function argon_deBroglie(T_σ::Float64)::Float64 #  ✅ 
@@ -200,6 +196,3 @@ function  λ_metropolis_pm1(λ::Int64,N::Int64,r_box::AbstractMatrix{Float64},r_
             return(accept)
         end
 end #λ_metropolis_pm1
-
-
-end

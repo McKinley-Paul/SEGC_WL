@@ -1,30 +1,29 @@
 module segc_wl
 using StaticArrays
-include("initialization_module.jl")
-using .initialization_module
+include("initialization.jl")
 
-include("utils_module.jl") # even though only initialization_module is used here, i had to do these to export them in this file so they are public facing and can be tested in /test/
-using .utils_module
-include("lj_module.jl")
-using .lj_module
-include("thermo_module.jl")
-using .thermo_module
+include("utils.jl")
+include("lj.jl")
+include("thermo.jl")
 # ✅  = unit tests for function exist in /tests/
-# this module contains the meat of the package including run_simulation and the various
-# High Level Wang Landau Monte Carlo functions. 
-export run_simulation!, translation_move!,λ_move!,update_wl!, post_run
+# this module contains the meat of the package including run_simulation and the various High Level Wang Landau Monte Carlo functions. 
 
-export 
-    utils_module,
-    initialization_module,
-    lj_module,
-    thermo_module
+# segc_wl.jl functions:
+export run_simulation!, translation_move!,λ_move!,update_wl!, post_run
+# initialization functions exports:
+export microstate,SimulationParams,init_microstate,check_inputs, print_simulation_params, print_microstate,print_wl, WangLandauVars,init_WangLandauVars, initialization_check, save_wanglandau_jld2, save_microstate_jld2,load_microstate_jld2, load_wanglandau_jld2, load_configuration
+# utils exports:
+export euclidean_distance, min_config_distance, euclidean_distance_squared_pbc, translate_by_random_vector, metropolis
+# lj exports:
+export argon_deBroglie, E_12_LJ, E_12_frac_LJ, potential_1_normal, potential_1_frac, λ_metropolis_pm1
+# thermo stuff:
+export correct_Q
 
 
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars)
     f_convergence_threshold = exp(10^(-8)) # Desgranges paper convergence criterion has a typo, this is from Original 2001 Landau paper which is presumably what Desgranges et. al. meant
     logf_convergence_threshold = log(f_convergence_threshold)
-    while (wl.logf ≥ logf_convergence_threshold ) && ( (wl.λ_moves_proposed + wl.translation_moves_proposed) < sim.maxiter)
+    while (wl.logf ≥ logf_convergence_threshold ) && ( wl.iters < sim.maxiter)
         ζ = rand(sim.rng)
         if ζ < 0.75                         # propose translational moves 75% of the time 
             translation_move!(sim,μ,wl)
@@ -35,14 +34,14 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
         update_wl!(wl,μ)
 
         # check flatness and save state:
-        if (wl.λ_moves_proposed + wl.translation_moves_proposed) % 1000 ==0 # check flatness only every 1000 cycles
+        if wl.iters % 1000 ==0 # check flatness only every 1000 cycles
             min = minimum(wl.H_λN)
             if min ≥  1000 # this is our flatness criteria
                 #save_wanglandau_jld2(wl,sim, "wl_checkpoint_before_rezeroing.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
                 wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
                 wl.logf = 0.5*wl.logf
             end
-            if (wl.λ_moves_proposed + wl.translation_moves_proposed) % 50000 ==0 # save checkpoint every 50,000 moves 
+            if wl.iters % 50000 ==0 # save checkpoint every 50,000 moves 
                 save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
                 save_microstate_jld2(μ,sim, "microstate_checkpoing.jld2")
             end
@@ -160,6 +159,7 @@ end
 function update_wl!(wl::WangLandauVars,μ::microstate)
     wl.logQ_λN[μ.λ+1,μ.N+1] += wl.logf
     wl.H_λN[μ.λ+1,μ.N+1] += 1
+    wl.iters +=1
 end #update_wl!
 
 function post_run(sim::SimulationParams,μ::microstate,wl::WangLandauVars)

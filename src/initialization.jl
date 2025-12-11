@@ -1,13 +1,8 @@
-module initialization_module
-include("utils_module.jl")
-using .utils_module
-
+# contains basic structs and initalization processes used in segc_wl
 using StaticArrays
 using Printf
 using JLD2
 using Random
-
-export microstate,SimulationParams,init_microstate,check_inputs, print_simulation_params, print_microstate,print_wl, WangLandauVars,init_WangLandauVars, initialization_check, save_wanglandau_jld2, save_microstate_jld2,load_microstate_jld2, load_wanglandau_jld2, load_configuration
 
 mutable struct microstate # holds the variables of the actual current or proposed state
     N::Int64 # number of particles in the microstate
@@ -100,11 +95,12 @@ mutable struct WangLandauVars
     # WangLandauVars holds variables related to the wang landau monte carlo process that will change throughout the course of the simulation
     logf::Float64 # natural log of f, the modification factor in the Wang Landau scheme which is initiall set to f = the euler constant
     H_λN::Matrix{Int64} # histogram of number of times each (λ,N) pair has been visited.  λ_max rows, N_max columns.
-    logQ_λN::Matrix{Float64} # "density of states" in SEGC is the extended configuration integrals Q(NVT,l) because V and T are fixed for given sim., they are left out of name, λ on rows and N on columns
+    logQ_λN::Matrix{Float64} # "density of states" for Wang Landau method in SEGC is the extended canonical partition functions Q(NVT,λ) because V and T are fixed for given sim., they are left out of name, λ on rows and N on columns
     translation_moves_proposed::Int64
     translation_moves_accepted::Int64
     λ_moves_proposed::Int64
     λ_moves_accepted::Int64
+    iters::Int64 # total number of monte carlo moves thus far
     δr_max_box::Float64
 end
 
@@ -113,7 +109,7 @@ function init_WangLandauVars(λ_max::Int64,N_max::Int64,L_σ::Float64)::WangLand
     H_λN = zeros(Int64,λ_max+1,N_max+1)
     logQ_λN=zeros(Float64,λ_max+1,N_max+1) 
     δr_max_box = 0.15/L_σ
-    wl = WangLandauVars(logf,H_λN,logQ_λN,0,0,0,0,δr_max_box)
+    wl = WangLandauVars(logf,H_λN,logQ_λN,0,0,0,0,0,δr_max_box)
     return(wl)
 end
 
@@ -173,6 +169,7 @@ function print_wl(wl::WangLandauVars,verbose=true)
     @printf("translation_moves_proposed = %f\n", wl.translation_moves_proposed)
     @printf("translation_moves_accepted = %f\n", wl.translation_moves_accepted)
     @printf("translation acceptance ratio = %.4f\n", ( wl.translation_moves_accepted/wl.translation_moves_proposed) )
+    @printf("Total monte carlo moves so far = %.1f\n", wl.iters )
 
     if verbose 
         display("LogQ: ")
@@ -210,5 +207,3 @@ end
 function load_microstate_jld2(filename::String)::microstate
     return load(filename, "μ")
 end
-
-end 

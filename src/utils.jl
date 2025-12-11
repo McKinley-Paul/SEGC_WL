@@ -1,8 +1,6 @@
-module utils_module
+# This file contains stuff general to the monte carlo or wang landau process
 using StaticArrays
 using Random
-# This module contains stuff general to the monte carlo or wang landau process
-export euclidean_distance, min_config_distance, euclidean_distance_squared_pbc, translate_by_random_vector, metropolis
 #  ✅  == checked in /test
 function euclidean_distance(ri::AbstractVector{Float64},rj::AbstractVector{Float64})::Float64 #  ✅ 
     # computes the euclidean distance between ri and rj. chatgpt says doing this manually in this way is the fastest b/c it avoids allocations 
@@ -86,5 +84,3 @@ function metropolis(ΔE::Float64,T_σ::Float64,rng=MersenneTwister())::Bool #  �
     end 
 
 end # metropolis
-
-end # end UtilsModule
