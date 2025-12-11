@@ -232,10 +232,12 @@ end
     r_cut_σ=3
     r_cut_squared_σ=r_cut_σ^2
     r_cut_squared_box = r_cut_squared_σ/(L_σ^2)
-    
+    input_path = joinpath(@__DIR__, "cube_vertices_home_made.inp")
+
     sim = SimulationParams(N_max=450,N_min=0,T_σ=T_σ,Λ_σ=Λ_σ,
                             λ_max=λ_max,r_cut_σ=r_cut_σ,
-                            input_filename="/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/cube_vertices_home_made.inp",# hommade input is the same as examples above 8 atoms on cube of sidelenghth 2 in simulation box of length 5 in σ units
+                            #input_filename="/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/cube_vertices_home_made.inp",# hommade input is the same as examples above 8 atoms on cube of sidelenghth 2 in simulation box of length 5 in σ units
+                            input_filename= input_path,# hommade input is the same as examples above 8 atoms on cube of sidelenghth 2 in simulation box of length 5 in σ units
                             save_directory_path= @__DIR__ ,rng=MersenneTwister(1234))
     wl = WangLandauVars(1,zeros(λ_max+1,N_max+1),zeros(λ_max+1,N_max+1),0,0,0,0,0,0.15)
     μ = microstate(size(r_box,2),34,r_box,r_frac_box)
@@ -293,10 +295,10 @@ end
     r_cut_σ=3
     r_cut_squared_σ=r_cut_σ^2
     r_cut_squared_box = r_cut_squared_σ/(L_σ^2)
-    
+    input_path = joinpath(@__DIR__, "cube_vertices_home_made.inp") 
     sim = SimulationParams(N_max=450,N_min=0,T_σ=T_σ,Λ_σ=Λ_σ,
                             λ_max=λ_max,r_cut_σ=r_cut_σ,
-                            input_filename="/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/cube_vertices_home_made.inp",# hommade input is the same as examples above 8 atoms on cube of sidelenghth 2 in simulation box of length 5 in σ units
+                            input_filename=input_path,# hommade input is the same as examples above 8 atoms on cube of sidelenghth 2 in simulation box of length 5 in σ units
                             save_directory_path= @__DIR__ , rng=MersenneTwister(1))
     wl = WangLandauVars(1,zeros(λ_max+1,N_max+1),zeros(λ_max+1,N_max+1),0,0,0,0,0,0.15)
     μ = microstate(size(r_box,2),34,r_box,r_frac_box)
@@ -324,7 +326,7 @@ println("")
     logQ_N1 = 0 
     logQ_N2 = 0
     for ii in 1:5
-        input_path = "/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/4_atom_cnf.inp"
+        input_path = joinpath(@__DIR__, "4_atom_cnf.inp")
         μstate = init_microstate(filename=input_path)
         T_σ = 1.0 
         Λ_σ = argon_deBroglie(T_σ)
@@ -369,7 +371,7 @@ end
 
     logQ_avg = [0.,0.,0.,0.,0.]
     for ii in 1:5
-        input_path = "/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/4_atom_cnf.inp"
+        input_path = joinpath(@__DIR__, "4_atom_cnf.inp")
         μstate = init_microstate(filename=input_path)
         T_σ = 1_000_000.0 
         Λ_σ = argon_deBroglie(T_σ)
