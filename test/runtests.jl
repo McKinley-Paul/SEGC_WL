@@ -6,6 +6,10 @@ import Pkg
 Pkg.activate(joinpath(@__DIR__, ".."))
 using segc_wl   
 
+println("")
+println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Running Function Unit Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+println("")
+
 ############ Tests for things in utils_module ############
 @testset "Utils" begin
     r1 = 100*rand(3)
@@ -46,7 +50,7 @@ end
 
 ############ Tests for things in lj_module ############
 @testset "LJ_module" begin
-    @test argon_deBroglie(2.0) ≈ 0.0530973 atol=0.000001 # verified against Mathematica from tests.nb
+    @test argon_deBroglie(2.0) ≈ 0.0530973 atol=0.000001 # verified against /test/mathematica_verification.nb
 
     @test E_12_frac_LJ(2.,0,99) == 0
     fracs = []
@@ -73,6 +77,7 @@ end
     @test all(E_test .≈ allen_tildesly_results) # this tests E_12_LJ,euclidean_distance_squared_pbc, the non-fractional-part of potential_1_normal
 end
 
+println("")
 
 @testset "λ_metropolis" begin
 # initializing some dummy inputs for testing
@@ -232,7 +237,7 @@ end
                             λ_max=λ_max,r_cut_σ=r_cut_σ,
                             input_filename="/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/cube_vertices_home_made.inp",# hommade input is the same as examples above 8 atoms on cube of sidelenghth 2 in simulation box of length 5 in σ units
                             save_directory_path= @__DIR__ ,rng=MersenneTwister(1234))
-    wl = WangLandauVars(1,zeros(λ_max+1,N_max+1),zeros(λ_max+1,N_max+1),0,0,0,0,0.15)
+    wl = WangLandauVars(1,zeros(λ_max+1,N_max+1),zeros(λ_max+1,N_max+1),0,0,0,0,0,0.15)
     μ = microstate(size(r_box,2),34,r_box,r_frac_box)
 
     #### accepting fractional particle move 
@@ -293,7 +298,7 @@ end
                             λ_max=λ_max,r_cut_σ=r_cut_σ,
                             input_filename="/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/cube_vertices_home_made.inp",# hommade input is the same as examples above 8 atoms on cube of sidelenghth 2 in simulation box of length 5 in σ units
                             save_directory_path= @__DIR__ , rng=MersenneTwister(1))
-    wl = WangLandauVars(1,zeros(λ_max+1,N_max+1),zeros(λ_max+1,N_max+1),0,0,0,0,0.15)
+    wl = WangLandauVars(1,zeros(λ_max+1,N_max+1),zeros(λ_max+1,N_max+1),0,0,0,0,0,0.15)
     μ = microstate(size(r_box,2),34,r_box,r_frac_box)
 
     old1 = (wl.translation_moves_accepted)
@@ -313,7 +318,7 @@ println("")
 println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Now Running Physics Tests ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 println("")
 
-@testset "4 Atom Test of Q(N=1),Q(N=2)" begin
+@testset "Comparison to Analytic Values of Q(N=1),Q(N=2)" begin
     # simulation of up to 4 atoms with SEGC-WL currently takes about 15 seconds
     # so lets run this 5 times for statistics
     logQ_N1 = 0 
@@ -350,6 +355,54 @@ println("")
         abs(mean_logQ - logQ_analytic) ≤ k *SE where k is the confidence interval such as k=1.96 corresponding to 95% confidence interval
     can come back and do this later but because this is going to run often we're just going to do it quick and dirty:
     =#
-    mathematica_logQ_N1 = 14.0055 # computed in /tests/tests.nb a mathematica notebook
-    @test logQ_N1 ≈ mathematica_logQ_N1 atol = (0.05*mathematica_logQ_N1)
+    mathematica_logQ_N1 = 14.0055 # analytically computed in /tests/mathematica_verification.nb a mathematica notebook
+    mathematica_logQ_N2 = 27.3179 # analytically computed in /tests/mathematica_verification.nb a mathematica notebook
+
+    @test logQ_N1 ≈ mathematica_logQ_N1 atol = (0.05*mathematica_logQ_N1) # within 5% seems good
+    @test logQ_N2 ≈ mathematica_logQ_N2 atol = (0.05*mathematica_logQ_N2)
+
+end
+
+
+@testset "Comparison to Analytic Ideal Gas Limit" begin
+    # in the high temperature limit, we expect our system to become the ideal gas which has an analytically computable partition function
+
+    logQ_avg = [0.,0.,0.,0.,0.]
+    for ii in 1:5
+        input_path = "/Users/mckinleypaul/Documents/montecarlo/segc_wl/test/4_atom_cnf.inp"
+        μstate = init_microstate(filename=input_path)
+        T_σ = 1_000_000.0 
+        Λ_σ = argon_deBroglie(T_σ)
+        sim = SimulationParams(
+            N_max=4,
+            N_min=0,
+            T_σ=T_σ,
+            Λ_σ = Λ_σ,
+            λ_max = 99,
+            r_cut_σ = 3.,
+            input_filename=input_path,
+            save_directory_path= @__DIR__ , 
+            maxiter=100_000_000)
+        wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
+        run_simulation!(sim,μstate,wl)
+        logQ = correct_Q(wl)
+        for ii in 1:5
+            logQ_avg[ii] += logQ[ii]
+        end
+    end
+    logQ_avg = logQ_avg.*(1/5) # average value of partition functions over five monte carlo runs
+    #println(logQ_avg)
+
+    #= the technically and statistically best thing to do would be run the simulation m independent times - independent meaning they must start from different initializaiton states, which is not the FCC focused workflow we have now
+    Then observe the sample standard error from the m trials.  (from normal Standard Error = Standard Deviation/sqrt(m) formula)
+    then you would use that SE to form a confidence interval and assert the analytic value falls inside of it:
+        abs(mean_logQ - logQ_analytic) ≤ k *SE where k is the confidence interval such as k=1.96 corresponding to 95% confidence interval
+    can come back and do this later but because this is going to run often we're just going to do it quick and dirty:
+    =#
+    mathematica_logQ_N2 = 68.7644 # analytically computed in /tests/mathematica_verification.nb a mathematica notebook
+    mathematica_logQ_N3 = 102.395
+    mathematica_logQ_N4 = 135.737
+    @test logQ_avg[3] ≈ mathematica_logQ_N2 atol = (0.05*mathematica_logQ_N2) # within 5% seems good
+    @test logQ_avg[4] ≈ mathematica_logQ_N3 atol = (0.05*mathematica_logQ_N3) # within 5% seems good
+    @test logQ_avg[5] ≈ mathematica_logQ_N4 atol = (0.05*mathematica_logQ_N4) # within 5% seems good
 end
