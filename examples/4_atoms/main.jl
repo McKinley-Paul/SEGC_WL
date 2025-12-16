@@ -6,7 +6,7 @@ import Pkg
 Pkg.activate(joinpath(@__DIR__, "../.."))
 using segc_wl   # or the module name inside segc_wl.jl
 
-input_path = "/Users/mckinleypaul/Documents/montecarlo/segc_wl/examples/4_atoms/4_atom_cnf.inp"
+input_path = joinpath(@__DIR__, "4_atom_cnf.inp")
 μstate = init_microstate(filename=input_path)
 T_σ = 1.0 
 Λ_σ = argon_deBroglie(T_σ)

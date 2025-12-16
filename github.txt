@@ -1,6 +1,6 @@
 # After you’ve edited some code and want to push the change
 git status
-git add .
+git add --all
 git commit -m "Describe what changed"
 git push
 
@@ -14,7 +14,3 @@ git checkout -b my-new-branch
 # this creates the branch and switches you onto it
 git push -u origin my-new-branch
 # the -u makes future git push and git pull default to this branch
-
-git add ../Project.toml
-git add -A ../src
-git add -A ../examples/4_atoms

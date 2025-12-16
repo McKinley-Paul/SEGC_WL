@@ -66,7 +66,7 @@ struct SimulationParams # immutable because structs are by default immutable in 
     input_filename::String
     save_directory_path::String #path to save variables to like binaries of microstate during checkpoints and after runs and so on
     # usually want to use save_directory_path = @__DIR__x
-    rng::AbstractRNG # used for seeding tests with random numbers via rng=Xoshiro(1234) or so on. For production runs, set rng=MersenneTwister()
+    rng::MersenneTwister # used for seeding tests with random numbers via rng=MersenneTwister(1234) or so on. For production runs, set rng=MersenneTwister()
     maxiter::Int64 # maximum monte carlo iterations, can set to 1 to test single steps
 
     # ~~~~~~~ Derived parameters ~~~~~~~~~

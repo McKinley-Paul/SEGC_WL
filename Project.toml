@@ -4,15 +4,23 @@ version = "0.1.0"
 authors = ["McKinleyPaul <mkpaulx@gmail.com>"]
 
 [deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+PProf = "e4faabce-9ead-11e9-39d9-4379958e3056"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Profile = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
+BenchmarkTools = "1.6.3"
 JLD2 = "0.6.3"
+PProf = "3.2.0"
 Printf = "1.11.0"
+Profile = "1.11.0"
 Random = "1.11.0"
+Revise = "3.12.3"
 StaticArrays = "1.9.15"
 
 [extras]
