@@ -133,11 +133,78 @@ function potential_1_frac(r_box::AbstractMatrix{Float64},r_frac_box::AbstractArr
 end # potential_1_frac
 
 
+# function  λ_metropolis_pm1(λ::Int64,N::Int64,r_box::AbstractMatrix{Float64},r_frac_box::AbstractVector{Float64},
+#                         λ_proposed::Int64, N_proposed::Int64, r_proposed_box::AbstractMatrix{Float64}, r_frac_proposed_box::AbstractVector{Float64},idx_deleted::Int64,
+#                         logQ_λN::Matrix{Float64}, Λ_σ::Float64,V_σ::Float64,T_σ::Float64,
+#                         λ_max::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64, rng::AbstractRNG=MersenneTwister())::Bool #  ✅ 
 
-function  λ_metropolis_pm1(λ::Int64,N::Int64,r_box::AbstractMatrix{Float64},r_frac_box::AbstractVector{Float64},
-                        λ_proposed::Int64, N_proposed::Int64, r_proposed_box::AbstractMatrix{Float64}, r_frac_proposed_box::AbstractVector{Float64},idx_deleted::Int64,
-                        logQ_λN::Matrix{Float64}, Λ_σ::Float64,V_σ::Float64,T_σ::Float64,
-                        λ_max::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64, rng::AbstractRNG=MersenneTwister())::Bool #  ✅ 
+
+# function  λ_metropolis_pm1(λ::Int64,N::Int64,r_box::Matrix{Float64},r_frac_box::MVector{Float64},
+#                         λ_proposed::Int64, N_proposed::Int64, r_proposed_box::Matrix{Float64}, r_frac_proposed_box::MVector{Float64},idx_deleted::Int64,
+#                         logQ_λN::Matrix{Float64}, Λ_σ::Float64,V_σ::Float64,T_σ::Float64,
+#                         λ_max::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64, rng::MersenneTwister=MersenneTwister())::Bool #  ✅ 
+
+#         # MAKES SOME SIMPLIFYING ASSUMPTIONS THAT ONLY WORK WHEN LAMBDA CAN ONLY CHANGE BY ±1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#         # the purpose of the function is to handle the complex control flow based on the current value of λ and the proposed one.
+#         # many things change including the form of the metropolis criterion, what energies you have to compute to get ΔE, and so on.
+#         # covered by in general by equations 10-12 in Desgranges 2012
+#         # assumes that you have already checked that N_proposed is in bounds  (N_min ≤ N_proposed ≤ N_max)
+
+#         # first we compute the multiplicative prefactor term involving Q,V,Λ in eqns 10-12-- because the N! terms can cause overflow, we only compute them once we know something about N old vs new
+#         logQ_diff = logQ_λN[λ+1,N+1] - logQ_λN[λ_proposed+1,N_proposed+1]
+#         partition_ratio = exp(logQ_diff)
+#         if (λ > 0 && λ_proposed > 0) || (λ == 0 && λ_proposed == 0)
+#             V_Λ_prefactor = V_σ^(N_proposed-N) * Λ_σ^(3*N - 3*N_proposed)
+#         elseif λ ==0 && λ_proposed > 0
+#             V_Λ_prefactor = V_σ^(N_proposed+1-N) * Λ_σ^(3*N - 3(N_proposed+1))
+#         elseif λ > 0 && λ_proposed == 0 
+#             V_Λ_prefactor = V_σ^(N_proposed - N - 1) * Λ_σ^(3*(N+1)-3*N_proposed)
+#         end
+
+#         # now we compute the exponential part of the criterion having to do with the configurational potential energy
+#         # and the N-dependent factorial prefactor factorial_prefactor = Nold!/Nnew!
+
+#         if N==N_proposed # λ changed so change in configurational energy only has to do with fractional particle old vs new
+#             # following equation 10 desgranges
+#            E_old = potential_1_frac(r_box,r_frac_box,   λ   ,λ_max,N,L_squared_σ,r_cut_squared_box)
+#            E_proposed = potential_1_frac(r_box,r_frac_box,  λ_proposed  ,λ_max,N,L_squared_σ,r_cut_squared_box)
+#            factorial_prefactor = 1
+        
+#         elseif N < N_proposed # particle created so λ = λ_max and λ_proposed = 0
+#             #  change in potential energy comes from fractional particle becoming full particle and the new fractional particle with λ=0 makes no contribution to energy
+#             # so E_Old = E_old_frac interaction with all others and E_new = E_new_full_particle interaction with all others
+#             factorial_prefactor = 1/N_proposed # only works for ±1
+#             E_old = potential_1_frac(r_box,r_frac_box,   λ   ,λ_max,N,L_squared_σ,r_cut_squared_box)
+#             i = size(r_proposed_box,2)
+#             new_full_particle = @view r_proposed_box[:,end]
+#             E_proposed = potential_1_normal(r_proposed_box,new_full_particle,i,r_frac_proposed_box,λ_proposed,λ_max,N_proposed,L_squared_σ,r_cut_squared_box)
+                    
+#         elseif N > N_proposed # particle destroyed so λ = 0 and λ_proposed = 99
+#             # old energy is energy of destroyed particle with rest of full particles 
+#             # new configurational energy is interaction of fractional particle with others
+#             factorial_prefactor = N # only works for ±1
+#             destroyed_particle = @view r_box[:,idx_deleted]
+#             E_old = potential_1_normal(r_box,destroyed_particle,idx_deleted,r_frac_box,λ,λ_max,N,L_squared_σ,r_cut_squared_box)
+#             E_proposed = potential_1_frac(r_proposed_box,r_frac_proposed_box,   λ_proposed   ,λ_max,N_proposed,L_squared_σ,r_cut_squared_box)
+        
+#         end # ΔN logic 
+
+#         ΔE = E_proposed - E_old
+#         exponent = -1*ΔE/T_σ 
+#         prob_ratio = partition_ratio*V_Λ_prefactor*factorial_prefactor*exp(exponent)
+#         if prob_ratio > 1
+#             return(true)
+#         else
+#             ζ = rand(rng)
+#             accept = (prob_ratio > ζ)   #boolean
+#             return(accept)
+#         end
+# end #λ_metropolis_pm1
+
+@inline function  λ_metropolis_pm1(μ::microstate,
+                           μ_prop::microstate, idx_deleted::Int64, # μ_prop = μ_proposed the next proposed microstate
+                           wl::WangLandauVars,sim::SimulationParams)::Bool #  ✅ 
 
         # MAKES SOME SIMPLIFYING ASSUMPTIONS THAT ONLY WORK WHEN LAMBDA CAN ONLY CHANGE BY ±1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -147,51 +214,49 @@ function  λ_metropolis_pm1(λ::Int64,N::Int64,r_box::AbstractMatrix{Float64},r_
         # assumes that you have already checked that N_proposed is in bounds  (N_min ≤ N_proposed ≤ N_max)
 
         # first we compute the multiplicative prefactor term involving Q,V,Λ in eqns 10-12-- because the N! terms can cause overflow, we only compute them once we know something about N old vs new
-        logQ_diff = logQ_λN[λ+1,N+1] - logQ_λN[λ_proposed+1,N_proposed+1]
+        logQ_diff = wl.logQ_λN[μ.λ+1 , μ.N+1] - wl.logQ_λN[μ_prop.λ+1 , μ_prop.N+1]
         partition_ratio = exp(logQ_diff)
-        if (λ > 0 && λ_proposed > 0) || (λ == 0 && λ_proposed == 0)
-            V_Λ_prefactor = V_σ^(N_proposed-N) * Λ_σ^(3*N - 3*N_proposed)
-        elseif λ ==0 && λ_proposed > 0
-            V_Λ_prefactor = V_σ^(N_proposed+1-N) * Λ_σ^(3*N - 3(N_proposed+1))
-        elseif λ > 0 && λ_proposed == 0 
-            V_Λ_prefactor = V_σ^(N_proposed - N - 1) * Λ_σ^(3*(N+1)-3*N_proposed)
+        if (μ.λ > 0 && μ_prop.λ > 0) || (μ.λ == 0 && μ_prop.λ == 0)
+            V_Λ_prefactor = sim.V_σ^(μ_prop.N -μ.N) * sim.Λ_σ^(3*μ.N - 3*μ_prop.N)
+        elseif μ.λ ==0 && μ_prop.λ > 0
+            V_Λ_prefactor = sim.V_σ^(μ_prop.N+1 - μ.N) * sim.Λ_σ^(3*μ.N - 3*(μ_prop.N+1))
+        elseif μ.λ > 0 && μ_prop.λ == 0 
+            V_Λ_prefactor = sim.V_σ^(μ_prop.N - μ.N - 1) * sim.Λ_σ^(3*(μ.N+1)-3*μ_prop.N)
         end
 
         # now we compute the exponential part of the criterion having to do with the configurational potential energy
         # and the N-dependent factorial prefactor factorial_prefactor = Nold!/Nnew!
 
-        if N==N_proposed # λ changed so change in configurational energy only has to do with fractional particle old vs new
+        if μ.N == μ_prop.N # λ changed so change in configurational energy only has to do with fractional particle old vs new
             # following equation 10 desgranges
-           E_old = potential_1_frac(r_box,r_frac_box,   λ   ,λ_max,N,L_squared_σ,r_cut_squared_box)
-           E_proposed = potential_1_frac(r_box,r_frac_box,  λ_proposed  ,λ_max,N,L_squared_σ,r_cut_squared_box)
+           E_old = potential_1_frac(μ.r_box,μ.r_frac_box,   μ.λ   ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
+           E_proposed = potential_1_frac(μ_prop.r_box,μ_prop.r_frac_box,      μ_prop.λ    ,sim.λ_max,μ_prop.N,sim.L_squared_σ,sim.r_cut_squared_box)
            factorial_prefactor = 1
         
-        elseif N < N_proposed # particle created so λ = λ_max and λ_proposed = 0
+        elseif μ.N < μ_prop.N # particle created so λ = λ_max and λ_proposed = 0
             #  change in potential energy comes from fractional particle becoming full particle and the new fractional particle with λ=0 makes no contribution to energy
             # so E_Old = E_old_frac interaction with all others and E_new = E_new_full_particle interaction with all others
-            factorial_prefactor = 1/N_proposed # only works for ±1
-            E_old = potential_1_frac(r_box,r_frac_box,   λ   ,λ_max,N,L_squared_σ,r_cut_squared_box)
-            i = size(r_proposed_box,2)
-            new_full_particle = @view r_proposed_box[:,end]
-            E_proposed = potential_1_normal(r_proposed_box,new_full_particle,i,r_frac_proposed_box,λ_proposed,λ_max,N_proposed,L_squared_σ,r_cut_squared_box)
+            factorial_prefactor = 1/μ_prop.N # only works for ±1
+            E_old = potential_1_frac(μ.r_box,μ.r_frac_box,  μ.λ   ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box)
+            i = size(μ_prop.r_box,2)
+            E_proposed = potential_1_normal(μ_prop.r_box , μ_prop.r_box[:,end] ,i,μ_prop.r_frac_box,μ_prop.λ,sim.λ_max,μ_prop.N,sim.L_squared_σ,sim.r_cut_squared_box)
                     
-        elseif N > N_proposed # particle destroyed so λ = 0 and λ_proposed = 99
+        elseif μ.N > μ_prop.N # particle destroyed so λ = 0 and λ_proposed = 99
             # old energy is energy of destroyed particle with rest of full particles 
             # new configurational energy is interaction of fractional particle with others
-            factorial_prefactor = N # only works for ±1
-            destroyed_particle = @view r_box[:,idx_deleted]
-            E_old = potential_1_normal(r_box,destroyed_particle,idx_deleted,r_frac_box,λ,λ_max,N,L_squared_σ,r_cut_squared_box)
-            E_proposed = potential_1_frac(r_proposed_box,r_frac_proposed_box,   λ_proposed   ,λ_max,N_proposed,L_squared_σ,r_cut_squared_box)
-        
+            factorial_prefactor = μ.N # only works for ±1
+            # destroyed_particle = @view μ.r_box[:,idx_deleted]
+            E_old = potential_1_normal(μ.r_box,μ.r_box[:,idx_deleted],idx_deleted,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box)
+            E_proposed = potential_1_frac(μ_prop.r_box,μ_prop.r_frac_box,  μ_prop.λ   ,sim.λ_max,μ_prop.N ,sim.L_squared_σ,sim.r_cut_squared_box)
         end # ΔN logic 
 
         ΔE = E_proposed - E_old
-        exponent = -1*ΔE/T_σ 
+        exponent = -1*ΔE/sim.T_σ 
         prob_ratio = partition_ratio*V_Λ_prefactor*factorial_prefactor*exp(exponent)
         if prob_ratio > 1
             return(true)
         else
-            ζ = rand(rng)
+            ζ = rand(sim.rng)
             accept = (prob_ratio > ζ)   #boolean
             return(accept)
         end

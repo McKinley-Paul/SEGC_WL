@@ -24,9 +24,11 @@ sim = SimulationParams(
 
 wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
 
+cache = init_cache()
+
 initialization_check(sim,μstate,wl)
 
-@time run_simulation!(sim,μstate,wl)
+@time run_simulation!(sim,μstate,wl,cache)
 
 post_run(sim,μstate,wl)
 

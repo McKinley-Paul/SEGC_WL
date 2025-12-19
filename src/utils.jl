@@ -59,17 +59,17 @@ function euclidean_distance_squared_pbc(ri_box::AbstractVector{Float64},rj_box::
 end # euclidean distance squared
 
 
-function translate_by_random_vector(r::AbstractVector{Float64},δr_max::Float64,rng::AbstractRNG=MersenneTwister())::Vector{Float64} #  ✅ 
-    # returns a new vector translated by a random amount less than √3*(δr_max) in a random direction. Does not apply PBC
+function translate_by_random_vector(r::AbstractVector{Float64},δr_max::Float64,rng::MersenneTwister,c::SimCache)::MVector{3,Float64} #  ✅ 
+    # modifies c.ζ_Mvec to a new vector translated by a random amount less than √3*(δr_max) in a random direction. Does not apply PBC
     # note that δr_max is the max that any x,y,z component can move
-    ζ =  @MArray (rand(rng,3)) #Three uniform random numbers in [0,1)
-    ζ .= 2.0 .*ζ .- 1.0 # now in range [-1,+1]
-    ζ .= ζ*δr_max       # now in range  [-δr_max,δr_max]
-    r_new = r .+ ζ
-    return(r_new)
+    c.ζ_Mvec .=  @MArray (rand(rng,3)) #Three uniform random numbers in [0,1)
+    c.ζ_Mvec .= 2.0 .* c.ζ_Mvec .- 1.0 # now in range [-1,+1]
+    c.ζ_Mvec .= c.ζ_Mvec * δr_max       # now in range  [-δr_max,δr_max]
+    c.ζ_Mvec .= r .+ c.ζ_Mvec
+    return(c.ζ_Mvec)
 end # translate_by_random_vector
 
-function metropolis(ΔE::Float64,T_σ::Float64,rng=MersenneTwister())::Bool #  ✅ 
+function metropolis(ΔE::Float64,T_σ::Float64,rng::MersenneTwister=MersenneTwister())::Bool #  ✅ 
     # in the case of a translational move, the acceptance criteria reduces to the standard metropolis one. Assumes ΔE and T_σ have LJ units (both have energy units)
     exponent = -1*ΔE/T_σ 
 
