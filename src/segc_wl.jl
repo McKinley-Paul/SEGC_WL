@@ -55,10 +55,10 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
 
     c.ζ_idx = rand(sim.rng,1:(μ.N+1)) # randomly pick atom to move, includes fractional particle
     if c.ζ_idx  < μ.N # move normal particle
-        ri_box = @view μ.r_box[:,c.ζ_idx]
+        ri_box = μ.r_box[c.ζ_idx]
     
-        c.ri_proposed_box .= translate_by_random_vector(ri_box, wl.δr_max_box, sim.rng,c) # Trial move to new position (in box=1 units), this used to be ri_proposed_box before cache
-        c.ri_proposed_box .= c.ri_proposed_box .- round.(c.ri_proposed_box)   # PBC
+        c.ri_proposed_box = translate_by_random_vector(ri_box, wl.δr_max_box, sim.rng,c) # Trial move to new position (in box=1 units), this used to be ri_proposed_box before cache
+        c.ri_proposed_box = pbc_wrap(c.ri_proposed_box)   # PBC
         E_proposed = potential_1_normal(μ.r_box,c.ri_proposed_box,c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
 
         if E_proposed == typemax(Float64) # check overlap
@@ -68,16 +68,16 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
             ΔE = E_proposed - E_old 
             accept = metropolis(ΔE,sim.T_σ,sim.rng) 
             if accept
-                μ.r_box[:,c.ζ_idx] .= c.ri_proposed_box
+                μ.r_box[c.ζ_idx] = c.ri_proposed_box
                 wl.translation_moves_accepted += 1
             end
         end
 
     else # move fractional particle
-        c.ri_proposed_box .= translate_by_random_vector(μ.r_frac_box,wl.δr_max_box,sim.rng,c)#  this used to be r_frac_proposed_box before I introduced the cache
-        c.ri_proposed_box .= c.ri_proposed_box .- round.(c.ri_proposed_box)
+        c.ri_proposed_box = translate_by_random_vector(μ.r_frac_box,wl.δr_max_box,sim.rng,c)#  this used to be r_frac_proposed_box before I introduced the cache
+        c.ri_proposed_box = pbc_wrap(c.ri_proposed_box)   # PBC
         if μ.λ == 0 # auto accept because if λ =0 , translational move of the fractional particle doesn't change energy
-            μ.r_frac_box .= c.ri_proposed_box
+            μ.r_frac_box = c.ri_proposed_box
             wl.translation_moves_accepted += 1
         else 
             E_proposed = potential_1_frac(μ.r_box, c.ri_proposed_box  ,μ.λ ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box)
@@ -86,7 +86,7 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
             ΔE = E_proposed - E_old 
                 accept = metropolis(ΔE,sim.T_σ,sim.rng) 
                 if accept
-                    μ.r_frac_box .= c.ri_proposed_box
+                    μ.r_frac_box = c.ri_proposed_box
                     wl.translation_moves_accepted += 1
                 end
         end
@@ -123,18 +123,18 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
         end
         
         idx_deleted = rand(sim.rng,1:μ.N)
-        cols = [1:idx_deleted-1; idx_deleted+1:size(μ.r_box,2)] # columns (particles) to keep 
-        c.μ_prop.r_box = μ.r_box[:,cols] # The size of this array is dynamic so I don't think it can be preallocated
-        c.μ_prop.r_frac_box  .=  μ.r_frac_box
+        cols = [1:idx_deleted-1; idx_deleted+1:length(μ.r_box)] # columns (particles) to keep 
+        c.μ_prop.r_box = μ.r_box[cols] # The size of this array is dynamic so I don't think it can be preallocated
+        c.μ_prop.r_frac_box  =  μ.r_frac_box
     elseif λ_proposed ≥ sim.λ_max # increment N 
         c.μ_prop.λ = 0 
         c.μ_prop.N = μ.N+1
-        if c.μ_prop.N  > sim.N_max # return early/reject move if we go out of bounds with too many particles (i.e. λ_prop = 100 when N=N_max)
+         if c.μ_prop.N  > sim.N_max # return early/reject move if we go out of bounds with too many particles (i.e. λ_prop = 100 when N=N_max)
             return(nothing)
         end
-        c.μ_prop.r_box = hcat(μ.r_box, μ.r_frac_box) # add the fractional particle to the end of the list again requires allocation i think
-        c.μ_prop.r_frac_box .= @MVector rand(sim.rng, 3)# 3 componenets betwewen [0,1)
-        c.μ_prop.r_frac_box .-=  0.5 # shift so three components in correct domain [-0.5,0.5]
+        c.μ_prop.r_box = [μ.r_box; [μ.r_frac_box]]# add the fractional particle to the end of the list again requires allocation i think
+        c.μ_prop.r_frac_box = @SVector rand(sim.rng, 3)# 3 componenets betwewen [0,1)
+        c.μ_prop.r_frac_box = c.μ_prop.r_frac_box .-  0.5 # shift so three components in correct domain [-0.5,0.5]
         idx_deleted = 0
     else
         throw("Error in λ move ΔN control flow")

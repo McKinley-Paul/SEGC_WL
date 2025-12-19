@@ -2,7 +2,7 @@
 using StaticArrays
 using Random
 #  ✅  == checked in /test
-function euclidean_distance(ri::AbstractVector{Float64},rj::AbstractVector{Float64})::Float64 #  ✅ 
+function euclidean_distance(ri::SVector{3,Float64},rj::SVector{3,Float64})::Float64 #  ✅ 
     # computes the euclidean distance between ri and rj. chatgpt says doing this manually in this way is the fastest b/c it avoids allocations 
     # outputs r = √(Δx^2 +Δy^2 Δz^2 )
     Δx = ri[1]-rj[1]
@@ -12,23 +12,22 @@ function euclidean_distance(ri::AbstractVector{Float64},rj::AbstractVector{Float
     return(rij)
 end # euclidean distance
 
-function min_config_distance(r::Matrix{Float64})::Tuple{Float64,Int64,Int64}
+function min_config_distance(r::Vector{SVector{3,Float64}})::Tuple{Float64,Int64,Int64}
     # checks each pairwise distance in r and returns the minimum distance and the indices of the particles that that distance is between
     # so the user can identify if there is overlap or not. Needs to be called after renormalization to box units
     # and periodic boundary assurances are applied
     # assumes r is 3xN matrix, position of each atom stored as column vector
 
-    m,N = size(r)
+    N = length(r)
+    m = length(r[1])
     @assert m==3 "position matrix doesn't seem to be 3xN"
 
     min_distance = typemax(Float64) # just initializing to be huge so don't have to add an extra condition to loop to check if it's the first time every time 
     i_min = 0
     j_min = 0
     @inbounds for i in 1:(N-1) # @inbounds tells the compiler to skip some safety checks it makes when doing loops involving arrays, basically we are telling the compiler we are not going to ask for an element not in the array bounds like r[0] or r[N+1] so it doesnt have to check for us, https://docs.julialang.org/en/v1/devdocs/boundscheck/
-        ri = @view r[:,i]
-        for j in (i+1):N
-            rj = @view r[:,j] # no need to make a copy because we aren't modifying this at all 
-            distance = euclidean_distance(ri,rj)
+        for j in (i+1):N # no need to make a copy because we aren't modifying this at all 
+            distance = euclidean_distance(r[i],r[j])
             if distance < min_distance
                 min_distance = distance
                 i_min = i 
@@ -40,7 +39,7 @@ function min_config_distance(r::Matrix{Float64})::Tuple{Float64,Int64,Int64}
     return(min_distance,i_min,j_min)
 end #min_config_distance(r)
 
-function euclidean_distance_squared_pbc(ri_box::AbstractVector{Float64},rj_box::AbstractVector{Float64})::Float64 #  ✅ 
+function euclidean_distance_squared_pbc(ri_box::SVector{3,Float64},rj_box::SVector{3,Float64})::Float64 #  ✅ 
     # computes the euclidean squared distance between ri and rj.  doing this manually in this way may be the fastest b/c it "avoids allocations" but im not sure
     # does so assuming ri and rj are in box units for periodic boundary conditions
     # outputs r2 = Δx^2 +Δy^2 Δz^2
@@ -59,14 +58,14 @@ function euclidean_distance_squared_pbc(ri_box::AbstractVector{Float64},rj_box::
 end # euclidean distance squared
 
 
-function translate_by_random_vector(r::AbstractVector{Float64},δr_max::Float64,rng::MersenneTwister,c::SimCache)::MVector{3,Float64} #  ✅ 
-    # modifies c.ζ_Mvec to a new vector translated by a random amount less than √3*(δr_max) in a random direction. Does not apply PBC
+function translate_by_random_vector(r::SVector{3,Float64},δr_max::Float64,rng::MersenneTwister,c::SimCache)::SVector{3,Float64} #  ✅ 
+    # modifies c.ζ_Svec to a new vector translated by a random amount less than √3*(δr_max) in a random direction. Does not apply PBC
     # note that δr_max is the max that any x,y,z component can move
-    c.ζ_Mvec .=  @MArray (rand(rng,3)) #Three uniform random numbers in [0,1)
-    c.ζ_Mvec .= 2.0 .* c.ζ_Mvec .- 1.0 # now in range [-1,+1]
-    c.ζ_Mvec .= c.ζ_Mvec * δr_max       # now in range  [-δr_max,δr_max]
-    c.ζ_Mvec .= r .+ c.ζ_Mvec
-    return(c.ζ_Mvec)
+    c.ζ_Svec =  @SVector (rand(rng,3)) #Three uniform random numbers in [0,1)
+    c.ζ_Svec = 2.0 .* c.ζ_Svec .- 1.0 # now in range [-1,+1]
+    c.ζ_Svec = c.ζ_Svec * δr_max       # now in range  [-δr_max,δr_max]
+    c.ζ_Svec = r .+ c.ζ_Svec
+    return(c.ζ_Svec)
 end # translate_by_random_vector
 
 function metropolis(ΔE::Float64,T_σ::Float64,rng::MersenneTwister=MersenneTwister())::Bool #  ✅ 

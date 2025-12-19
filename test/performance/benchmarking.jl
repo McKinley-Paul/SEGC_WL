@@ -103,3 +103,5 @@ end
 function warntype_run_simulation(μ::microstate,sim::SimulationParams,wl::WangLandauVars)
     @code_warntype run_simulation!(sim,μ,wl) # nothing in red or yellow
 end
+
+@code_warntype euclidean_distance_squared_pbc(ri_box, rj_box)
