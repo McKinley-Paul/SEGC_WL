@@ -40,19 +40,18 @@ function E_12_LJ(rij_squared_σ::Float64)::Float64 #  ✅
 
 end #E12_LJ
 
+
 function E_12_frac_LJ(rij_squared_σ::Float64,λ::Int64,λ_max::Int64)::Float64 #  ✅ 
     #= computes interaction between fractional particle and normal LJ particle according to equation 16 of Desgranges 2016. Note that `M` in Desgranges = λ_max + 1 in our notation
     returns energy in lennard jones units
     # assumes that rij_squared_σ was computed using the correct minimum image PBC 
     =# 
-    rij_σ = sqrt(rij_squared_σ) # sqrt is unavoidable here I think 
     M = λ_max + 1
     ϵ_ξ = (λ/M)^(1/3) # fractional energy  coupling parameter in lennard jones units (so really this might be named ϵ_ξ_σ but that just looked like too much)
-    σ_ξ = (λ/M)^(1/4) # \sigma_\xi is the fractional distance coupling parameter in LJ σ units  
-    E_int = (σ_ξ/rij_σ)^12 - (σ_ξ/rij_σ)^6
+    σ_ξ_squared = (λ/M)^(1/2) # \sigma_\xi is the fractional distance coupling parameter in LJ σ units, because (σ_ξ)^2 = (λ/M)^(1/2)
+    E_int = (σ_ξ_squared/rij_squared_σ)^6 - (σ_ξ_squared/rij_squared_σ)^3
     E_int = 4*ϵ_ξ*E_int
     return(E_int)
-
 end #E12_frac_lj 
 
 

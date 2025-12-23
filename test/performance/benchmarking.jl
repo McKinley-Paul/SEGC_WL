@@ -92,3 +92,20 @@ function warntype_run_simulation(μ::microstate,sim::SimulationParams,wl::WangLa
 end
 
 simcube.maxiter
+
+
+function E_12_LJ_old(rij_squared_σ::Float64)::Float64 #  ✅ 
+    #= Computes the interaction energy between two normal lennard jones particles in LJ units 
+    rij_squared_\sigma = squared distance between two particles in lennard jones \sigma =1 units
+    =# 
+    E_int = (1/rij_squared_σ)^6 - (1/rij_squared_σ)^3
+    E_int = 4*E_int 
+    return(E_int)
+
+end #E12_LJ
+
+ function E_12_LJ_new(rij_squared_σ::Float64)::Float64
+    inv_r6 = (inv(rij_squared_σ))^3 # inv(x) = 1/x for x::Float64
+    return 4.0 * (inv_r6^2 - inv_r6)
+end
+ 
