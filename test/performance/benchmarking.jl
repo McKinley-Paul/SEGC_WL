@@ -27,42 +27,37 @@ function init_4atom_state()
         r_cut_σ = 3.,
         input_filename=input_path,
         save_directory_path= @__DIR__ , 
-        maxiter=100)
+        maxiter=10_000)
 
     wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
-    c = init_cache()
+    c = init_cache(sim,μstate)
     return(μstate,sim,wl,c)
 end
 
 function init_cube_state()
    # initializing some vars for a test
-    r_σ = [-1  1  1  -1  -1 -1  1  1;  
-            -1 -1  1   1   1 -1 -1  1;
-            1  1  1   1  -1 -1 -1  -1  ] # 8 particles on in cube of sidelength 2 centered at (0,0,0), lets just say "box" is sidelength 5
+    # r_σ = [-1  1  1  -1  -1 -1  1  1;  
+    #         -1 -1  1   1   1 -1 -1  1;
+    #         1  1  1   1  -1 -1 -1  -1  ] # 8 particles on in cube of sidelength 2 centered at (0,0,0), lets just say "box" is sidelength 5
+    # r_box = r_σ ./ L_σ
+    # r_box .= r_box .- round.(r_box)
     T_σ=1.
     Λ_σ=argon_deBroglie(T_σ)
-    L_σ=5.
-    r_box = r_σ ./ L_σ
-    r_box .= r_box .- round.(r_box)
     λ_max = 99
     N_max = 8
-    r_frac_box = [0.,0.,0.,]
     r_cut_σ=3
     input_path = joinpath(@__DIR__, "cube_vertices_home_made.inp") 
     sim = SimulationParams(N_max=N_max,N_min=0,T_σ=T_σ,Λ_σ=Λ_σ,
                             λ_max=λ_max,r_cut_σ=r_cut_σ,
                             input_filename=input_path,# hommade input is the same as examples above 8 atoms on cube of sidelenghth 2 in simulation box of length 5 in σ units
-                            save_directory_path= @__DIR__ , rng=MersenneTwister(1))
+                            save_directory_path= @__DIR__ , rng=MersenneTwister(1),maxiter=100_000)
     wl = WangLandauVars(1,zeros(λ_max+1,N_max+1),zeros(λ_max+1,N_max+1),0,0,0,0,0,0.15)
-    μ = microstate(size(r_box,2),34,r_box,r_frac_box)
-    c = init_cache()
-
+    μ = init_microstate(filename=input_path)
+    c = init_cache(sim,μ)
     return(μ,sim,wl,c)
 end
-
-μ4,sim4,wl4,c = init_4atom_state()
-
-μcube,simcube,wlcube,c = init_cube_state()
+μ4,sim4,wl4,c4 = init_4atom_state()
+μcube,simcube,wlcube,ccube = init_cube_state()
 #with @bechmark $var 'inlines' variable, not sure what that means but is supposed to be necessary for accurate benchmarking
 function run_simulation_allocs_benchmark(μ::microstate,sim::SimulationParams,wl::WangLandauVars,c::SimCache)
     Profile.Allocs.clear()
@@ -72,6 +67,8 @@ function run_simulation_allocs_benchmark(μ::microstate,sim::SimulationParams,wl
 
 end
 
+#run_simulation_allocs_benchmark(μcube,simcube,wlcube,ccube)
+
 function run_simulation_time_benchmark()
     μ4,sim4,wl4,c = init_4atom_state()
     @benchmark run_simulation!(sim4,μ4,wl4,c)
@@ -79,17 +76,7 @@ function run_simulation_time_benchmark()
 end
 
 
-println("bechmarking with removed particle")
-copy_microstate!(c.μ_prop,μcube)
-c.μ_prop.r_box = μcube.r_box[:,2:end]
-c.μ_prop.N = μcube.N-1
-#@benchmark λ_metropolis_pm1($μcube,$c.μ_prop,$1,$wlcube,$simcube)
 
-# println("benchmarking with added particle")
-# copy_microstate!(c.μ_prop,μcube)
-# c.μ_prop.r_box = hcat(μcube.r_box,[0. ,0., 0.])
-# c.μ_prop.N = μcube.N+1
-# @benchmark λ_metropolis_pm1($μcube,$c.μ_prop,$1,$wlcube,$simcube)
 
 ############### warntype #########################
 function warntype_translation_move(μ::microstate,sim::SimulationParams,wl::WangLandauVars,c::SimCache)
@@ -104,4 +91,4 @@ function warntype_run_simulation(μ::microstate,sim::SimulationParams,wl::WangLa
     @code_warntype run_simulation!(sim,μ,wl) # nothing in red or yellow
 end
 
-@code_warntype euclidean_distance_squared_pbc(ri_box, rj_box)
+simcube.maxiter

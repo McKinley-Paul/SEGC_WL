@@ -54,30 +54,31 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
     wl.translation_moves_proposed += 1
 
     c.ζ_idx = rand(sim.rng,1:(μ.N+1)) # randomly pick atom to move, includes fractional particle
-    if c.ζ_idx  < μ.N # move normal particle
-        ri_box = μ.r_box[c.ζ_idx]
-    
-        c.ri_proposed_box = translate_by_random_vector(ri_box, wl.δr_max_box, sim.rng,c) # Trial move to new position (in box=1 units), this used to be ri_proposed_box before cache
-        c.ri_proposed_box = pbc_wrap(c.ri_proposed_box)   # PBC
+    if c.ζ_idx  < μ.N # move normal particle    
+        c.ri_proposed_box .= μ.r_box[c.ζ_idx]
+        translate_by_random_vector!(c.ri_proposed_box, wl.δr_max_box, sim.rng,c) # Trial move to new position (in box=1 units), this used to be ri_proposed_box before cache
+        pbc_wrap!(c.ri_proposed_box)   # PBC
         E_proposed = potential_1_normal(μ.r_box,c.ri_proposed_box,c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
 
         if E_proposed == typemax(Float64) # check overlap
             nothing # reject the move and recount this state for histogram and partition function 
         else   
-            E_old =potential_1_normal(μ.r_box,ri_box,c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
+            E_old =potential_1_normal(μ.r_box,μ.r_box[c.ζ_idx],c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
             ΔE = E_proposed - E_old 
             accept = metropolis(ΔE,sim.T_σ,sim.rng) 
             if accept
-                μ.r_box[c.ζ_idx] = c.ri_proposed_box
+                μ.r_box[c.ζ_idx] .= c.ri_proposed_box
+                c.μ_prop.r_box[c.ζ_idx] .= c.ri_proposed_box
                 wl.translation_moves_accepted += 1
             end
         end
 
     else # move fractional particle
-        c.ri_proposed_box = translate_by_random_vector(μ.r_frac_box,wl.δr_max_box,sim.rng,c)#  this used to be r_frac_proposed_box before I introduced the cache
-        c.ri_proposed_box = pbc_wrap(c.ri_proposed_box)   # PBC
+        c.ri_proposed_box .= μ.r_frac_box
+        translate_by_random_vector!(c.ri_proposed_box,wl.δr_max_box,sim.rng,c)#  this used to be r_frac_proposed_box before I introduced the cache
+        pbc_wrap!(c.ri_proposed_box)   # PBC
         if μ.λ == 0 # auto accept because if λ =0 , translational move of the fractional particle doesn't change energy
-            μ.r_frac_box = c.ri_proposed_box
+            μ.r_frac_box .= c.ri_proposed_box
             wl.translation_moves_accepted += 1
         else 
             E_proposed = potential_1_frac(μ.r_box, c.ri_proposed_box  ,μ.λ ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box)
@@ -86,7 +87,8 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
             ΔE = E_proposed - E_old 
                 accept = metropolis(ΔE,sim.T_σ,sim.rng) 
                 if accept
-                    μ.r_frac_box = c.ri_proposed_box
+                    μ.r_frac_box .= c.ri_proposed_box
+                    c.μ_prop.r_frac_box .= c.ri_proposed_box
                     wl.translation_moves_accepted += 1
                 end
         end
@@ -109,9 +111,16 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
 
     λ_proposed = μ.λ + 2*rand(sim.rng,Bool) - 1 # change λ by ±1; can go out of our range, and can be -1 or 100 which is our signal to change N 
     if -1 < λ_proposed ≤ sim.λ_max # λ_proposed < 99 for λ_max = 99 no change to N or anything besides λ
-        copy_microstate!(c.μ_prop,μ)
         c.μ_prop.λ = λ_proposed
         idx_deleted=0
+
+        accept = λ_metropolis_pm1(μ, c.μ_prop,idx_deleted, wl,sim)
+        if accept == true
+            wl.λ_moves_accepted += 1
+            μ.λ = c.μ_prop.λ
+        else # reset the cache if state is rejected 
+            c.μ_prop.λ = μ.λ # reset proposed λ to current λ if move rejected
+        end
 
     elseif λ_proposed == -1 # decrement N 
         # keep the fractional particle in r_frac_box but delete a random particle from the list, need to pick a random particle I think
@@ -119,33 +128,61 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
         c.μ_prop.N = μ.N-1
         if c.μ_prop.N < sim.N_min # return early/reject move if negative particles appear i.e. if λ_proposed = -1 initially when N=0
             # have to do this here otherwise line below idx_deleted will throw error when μ.N == 0
+            c.μ_prop.λ = μ.λ # reset the cache
+            c.μ_prop.N += 1
             return(nothing)
         end
-        
+
         idx_deleted = rand(sim.rng,1:μ.N)
-        cols = [1:idx_deleted-1; idx_deleted+1:length(μ.r_box)] # columns (particles) to keep 
-        c.μ_prop.r_box = μ.r_box[cols] # The size of this array is dynamic so I don't think it can be preallocated
-        c.μ_prop.r_frac_box  =  μ.r_frac_box
+        # swap last particle into deleted slot
+        if idx_deleted != μ.N
+            c.μ_prop.r_box[idx_deleted] .= μ.r_box[μ.N]
+        end
+
+        accept = λ_metropolis_pm1(μ, c.μ_prop,idx_deleted, wl,sim)
+        if accept == true
+            wl.λ_moves_accepted += 1
+            μ.λ = c.μ_prop.λ
+            if idx_deleted != μ.N # only do the swap if we actually deleted a particle that wasn't the last one
+                μ.r_box[idx_deleted] .= μ.r_box[μ.N] # swap last particle into deleted slot in actual microstate
+            end  
+            μ.N -= 1
+        else # reset the cache state if rejected
+            c.μ_prop.λ = μ.λ 
+            c.μ_prop.N += 1
+            c.μ_prop.r_box[idx_deleted] .= μ.r_box[idx_deleted] # put back the deleted particle in the cache
+        end
+
     elseif λ_proposed ≥ sim.λ_max # increment N 
         c.μ_prop.λ = 0 
         c.μ_prop.N = μ.N+1
          if c.μ_prop.N  > sim.N_max # return early/reject move if we go out of bounds with too many particles (i.e. λ_prop = 100 when N=N_max)
+            c.μ_prop.λ = μ.λ # reset the cache if move goes out of bounds
+            c.μ_prop.N -= 1
             return(nothing)
         end
-        c.μ_prop.r_box = [μ.r_box; [μ.r_frac_box]]# add the fractional particle to the end of the list again requires allocation i think
-        c.μ_prop.r_frac_box = @SVector rand(sim.rng, 3)# 3 componenets betwewen [0,1)
-        c.μ_prop.r_frac_box = c.μ_prop.r_frac_box .-  0.5 # shift so three components in correct domain [-0.5,0.5]
+        c.μ_prop.r_box[c.μ_prop.N] .= μ.r_frac_box # add the fractional particle to the μ.N+1 position
+        @inbounds for i in 1:3
+            c.μ_prop.r_frac_box[i] = rand(sim.rng) - 0.5
+        end
         idx_deleted = 0
+        
+        accept = λ_metropolis_pm1(μ, c.μ_prop,idx_deleted, wl,sim)
+        if accept == true
+            wl.λ_moves_accepted += 1
+            μ.λ = 0
+            μ.N += 1
+            μ.r_frac_box .= c.μ_prop.r_frac_box
+            μ.r_box[μ.N] .= c.μ_prop.r_box[μ.N] # add the fractional particle to the μ.N position in actual microstate
+        else # reset the cache state if rejected
+            c.μ_prop.λ = μ.λ
+            c.μ_prop.N -= 1
+            c.μ_prop.r_frac_box .= μ.r_frac_box
+            # we don't reset c.μ_prop.r_box[μ.N+1] because it doesn't matter 
+        end
     else
         throw("Error in λ move ΔN control flow")
     end # ΔN control flow
-
-    accept = λ_metropolis_pm1(μ, c.μ_prop,idx_deleted, wl,sim)
-
-    if accept == true
-        wl.λ_moves_accepted += 1
-        copy_microstate!(μ,c.μ_prop)
-    end
 end
 
 function update_wl!(wl::WangLandauVars,μ::microstate)

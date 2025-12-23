@@ -56,7 +56,7 @@ function E_12_frac_LJ(rij_squared_σ::Float64,λ::Int64,λ_max::Int64)::Float64 
 end #E12_frac_lj 
 
 
-function potential_1_normal(r_box::Vector{SVector{3,Float64}},ri_box::SVector{3,Float64},i::Int64,r_frac_box::SVector{3,Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64)::Float64 #  ✅ 
+function potential_1_normal(r_box::Vector{MVector{3,Float64}},ri_box::MVector{3,Float64},i::Int64,r_frac_box::MVector{3,Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64)::Float64 #  ✅ 
     #= Calculates the sum of the interaction potential between 1 special particle labelled i (e.g. the particle involved in a proposal move) in the r list and all others including the fractional particle
     Inputs:
         -r_box (Array of Float64s): 3xN position matrix of N normal particles in box units
@@ -75,10 +75,9 @@ function potential_1_normal(r_box::Vector{SVector{3,Float64}},ri_box::SVector{3,
     E_int_σ = 0
 
     # first computing interaction with normal particles
-    for j in 1:N
+    @inbounds for j in 1:N
         if j != i # avoid double counting
-            rj_box = r_box[j]
-            rij_squared_box = euclidean_distance_squared_pbc(ri_box,rj_box)
+            rij_squared_box = euclidean_distance_squared_pbc(ri_box,r_box[j])
             if rij_squared_box < r_cut_squared_box # only evaluate potential if pair is inside cutoff distance
                 rij_squared_σ = rij_squared_box  * L_squared_σ   # convert to potential natural units (i.e. lennard jones) to compute the potentials see allen and Tildesly one Note note for explanation why
                 if rij_squared_σ >  0.5 # close to overlap threshold given by allen and tildesly of potential E > 100, ours is E > 224
@@ -103,7 +102,7 @@ function potential_1_normal(r_box::Vector{SVector{3,Float64}},ri_box::SVector{3,
 
 end # potential_1_normal
 
-function potential_1_frac(r_box::Vector{SVector{3,Float64}},r_frac_box::SVector{3,Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64)::Float64
+function potential_1_frac(r_box::Vector{MVector{3,Float64}},r_frac_box::MVector{3,Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64)::Float64
     #= this function calculates the sum of all interactions between the fractional particle and all the normal particles
         -r_box (Array of Float64s): 3xN position matrix of N normal particles in box units
         - r_frac_box (static array of Float64s): location of fractional particle in box units
@@ -117,7 +116,7 @@ function potential_1_frac(r_box::Vector{SVector{3,Float64}},r_frac_box::SVector{
     =# 
     E_int_σ = 0
 
-    for j in 1:N
+    @inbounds for j in 1:N
         rij_squared_box = euclidean_distance_squared_pbc(r_frac_box,r_box[j])
         if (rij_squared_box < r_cut_squared_box) && (rij_squared_box > 0) # if rij_squared_box ==0 E_12_frac_LJ returns a NaN
             rij_squared_σ = rij_squared_box  * L_squared_σ 
@@ -131,8 +130,8 @@ function potential_1_frac(r_box::Vector{SVector{3,Float64}},r_frac_box::SVector{
 
 end # potential_1_frac
 
-
-@inline function  λ_metropolis_pm1(μ::microstate,
+# was @inline 
+function  λ_metropolis_pm1(μ::microstate,
                            μ_prop::microstate, idx_deleted::Int64, # μ_prop = μ_proposed the next proposed microstate
                            wl::WangLandauVars,sim::SimulationParams)::Bool #  ✅ 
 
