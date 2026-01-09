@@ -58,12 +58,12 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
         c.ri_proposed_box .= μ.r_box[c.ζ_idx]
         translate_by_random_vector!(c.ri_proposed_box, wl.δr_max_box, sim.rng,c) # Trial move to new position (in box=1 units), this used to be ri_proposed_box before cache
         pbc_wrap!(c.ri_proposed_box)   # PBC
-        E_proposed = potential_1_normal(μ.r_box,c.ri_proposed_box,c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
+        E_proposed = potential_1_normal(μ.r_box,c.ri_proposed_box,c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared ) 
 
         if E_proposed == typemax(Float64) # check overlap
             nothing # reject the move and recount this state for histogram and partition function 
         else   
-            E_old =potential_1_normal(μ.r_box,μ.r_box[c.ζ_idx],c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
+            E_old =potential_1_normal(μ.r_box,μ.r_box[c.ζ_idx],c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared ) 
             ΔE = E_proposed - E_old 
             accept = metropolis(ΔE,sim.T_σ,sim.rng) 
             if accept
@@ -81,9 +81,9 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
             μ.r_frac_box .= c.ri_proposed_box
             wl.translation_moves_accepted += 1
         else 
-            E_proposed = potential_1_frac(μ.r_box, c.ri_proposed_box  ,μ.λ ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box)
+            E_proposed = potential_1_frac(μ.r_box, c.ri_proposed_box  ,μ.λ ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared )
 
-            E_old =potential_1_frac(μ.r_box,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box)
+            E_old =potential_1_frac(μ.r_box,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared )
             ΔE = E_proposed - E_old 
                 accept = metropolis(ΔE,sim.T_σ,sim.rng) 
                 if accept
@@ -95,13 +95,15 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
 
     end # if i < N deciding to move normal or translational particle
 
-    if (wl.translation_moves_accepted/wl.translation_moves_proposed > 0.55) && wl.δr_max_box < 1.0 # tune δr_max_box to get ~50% acceptance, pg 159 Allen Tildesly
-        # added the wl.δr_max_box < 1.0 because for dilute systems or ideal gas conditions you accept every move and the δr_max_box grows riducously and unphysically for a periodic system using  box=1 units
-        wl.δr_max_box = wl.δr_max_box * 1.05
+    if wl.logf == 1 # tune δr_max_box during first wang landau epoch
+        if (wl.translation_moves_accepted/wl.translation_moves_proposed > 0.55) && wl.δr_max_box < 1.0 # tune δr_max_box to get ~50% acceptance, pg 159 Allen Tildesly
+            # added the wl.δr_max_box < 1.0 because for dilute systems or ideal gas conditions you accept every move and the δr_max_box grows riducously and unphysically for a periodic system using  box=1 units
+            wl.δr_max_box = wl.δr_max_box * 1.05
 
-    elseif wl.translation_moves_accepted/wl.translation_moves_proposed  < 0.45
-        wl.δr_max_box = wl.δr_max_box*0.95
-    end 
+        elseif wl.translation_moves_accepted/wl.translation_moves_proposed  < 0.45
+            wl.δr_max_box = wl.δr_max_box*0.95
+        end 
+    end
 end# translation move
 
 function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::SimCache)
@@ -114,12 +116,19 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
         c.μ_prop.λ = λ_proposed
         idx_deleted=0
 
+        c.μ_prop.ϵ_ξ = ( c.μ_prop.λ/(sim.λ_max + 1) )^(1/3)
+        c.μ_prop.σ_ξ_squared = (c.μ_prop.λ/(sim.λ_max + 1) )^(1/2) 
+
         accept = λ_metropolis_pm1(μ, c.μ_prop,idx_deleted, wl,sim)
         if accept == true
             wl.λ_moves_accepted += 1
             μ.λ = c.μ_prop.λ
+            μ.ϵ_ξ = c.μ_prop.ϵ_ξ
+            μ.σ_ξ_squared = c.μ_prop.σ_ξ_squared
         else # reset the cache if state is rejected 
             c.μ_prop.λ = μ.λ # reset proposed λ to current λ if move rejected
+            c.μ_prop.ϵ_ξ = μ.ϵ_ξ 
+            c.μ_prop.σ_ξ_squared = μ.σ_ξ_squared
         end
 
     elseif λ_proposed == -1 # decrement N 
@@ -139,6 +148,9 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
             c.μ_prop.r_box[idx_deleted] .= μ.r_box[μ.N]
         end
 
+        c.μ_prop.ϵ_ξ = ( c.μ_prop.λ/(sim.λ_max + 1) )^(1/3)
+        c.μ_prop.σ_ξ_squared = (c.μ_prop.λ/(sim.λ_max + 1) )^(1/2) 
+
         accept = λ_metropolis_pm1(μ, c.μ_prop,idx_deleted, wl,sim)
         if accept == true
             wl.λ_moves_accepted += 1
@@ -147,10 +159,17 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
                 μ.r_box[idx_deleted] .= μ.r_box[μ.N] # swap last particle into deleted slot in actual microstate
             end  
             μ.N -= 1
+
+            μ.ϵ_ξ = c.μ_prop.ϵ_ξ
+            μ.σ_ξ_squared = c.μ_prop.σ_ξ_squared
+
         else # reset the cache state if rejected
             c.μ_prop.λ = μ.λ 
             c.μ_prop.N += 1
             c.μ_prop.r_box[idx_deleted] .= μ.r_box[idx_deleted] # put back the deleted particle in the cache
+            
+            c.μ_prop.ϵ_ξ = μ.ϵ_ξ 
+            c.μ_prop.σ_ξ_squared = μ.σ_ξ_squared
         end
 
     elseif λ_proposed ≥ sim.λ_max # increment N 
@@ -166,7 +185,11 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
             c.μ_prop.r_frac_box[i] = rand(sim.rng) - 0.5
         end
         idx_deleted = 0
-        
+
+        c.μ_prop.ϵ_ξ = ( c.μ_prop.λ/(sim.λ_max + 1) )^(1/3)
+        c.μ_prop.σ_ξ_squared = (c.μ_prop.λ/(sim.λ_max + 1) )^(1/2) 
+
+
         accept = λ_metropolis_pm1(μ, c.μ_prop,idx_deleted, wl,sim)
         if accept == true
             wl.λ_moves_accepted += 1
@@ -174,11 +197,16 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
             μ.N += 1
             μ.r_frac_box .= c.μ_prop.r_frac_box
             μ.r_box[μ.N] .= c.μ_prop.r_box[μ.N] # add the fractional particle to the μ.N position in actual microstate
+
+            μ.ϵ_ξ = c.μ_prop.ϵ_ξ
+            μ.σ_ξ_squared = c.μ_prop.σ_ξ_squared 
         else # reset the cache state if rejected
             c.μ_prop.λ = μ.λ
             c.μ_prop.N -= 1
             c.μ_prop.r_frac_box .= μ.r_frac_box
             # we don't reset c.μ_prop.r_box[μ.N+1] because it doesn't matter 
+            c.μ_prop.ϵ_ξ = μ.ϵ_ξ 
+            c.μ_prop.σ_ξ_squared = μ.σ_ξ_squared
         end
     else
         throw("Error in λ move ΔN control flow")

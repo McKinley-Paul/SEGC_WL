@@ -7,7 +7,6 @@ Pkg.activate(joinpath(@__DIR__, "../.."))
 using segc_wl   # or the module name inside segc_wl.jl
 
 input_path = joinpath(@__DIR__, "4_atom_cnf.inp")
-μstate = init_microstate(filename=input_path)
 T_σ = 1.0 
 Λ_σ = argon_deBroglie(T_σ)
 println(Λ_σ)
@@ -21,6 +20,8 @@ sim = SimulationParams(
     input_filename=input_path,
     save_directory_path= @__DIR__ , 
     maxiter=100_000_000)
+
+μstate = init_microstate(sim=sim,filename=input_path)
 
 wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
 

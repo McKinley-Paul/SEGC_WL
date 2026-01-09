@@ -37,25 +37,22 @@ function E_12_LJ(rij_squared_σ::Float64)::Float64 #  ✅
     E_int = (1/rij_squared_σ)^6 - (1/rij_squared_σ)^3
     E_int = 4*E_int 
     return(E_int)
+end 
 
-end #E12_LJ
-
-
-function E_12_frac_LJ(rij_squared_σ::Float64,λ::Int64,λ_max::Int64)::Float64 #  ✅ 
+function E_12_frac_LJ(rij_squared_σ::Float64,λ::Int64,λ_max::Int64,ϵ_ξ::Float64,σ_ξ_squared::Float64)::Float64 #  ✅ 
     #= computes interaction between fractional particle and normal LJ particle according to equation 16 of Desgranges 2016. Note that `M` in Desgranges = λ_max + 1 in our notation
     returns energy in lennard jones units
+    # takes in ϵ_ξ and σ_ξ_squared instead of precomputing because they only need to be computed 1 time every time λ changes
     # assumes that rij_squared_σ was computed using the correct minimum image PBC 
     =# 
-    M = λ_max + 1
-    ϵ_ξ = (λ/M)^(1/3) # fractional energy  coupling parameter in lennard jones units (so really this might be named ϵ_ξ_σ but that just looked like too much)
-    σ_ξ_squared = (λ/M)^(1/2) # \sigma_\xi is the fractional distance coupling parameter in LJ σ units, because (σ_ξ)^2 = (λ/M)^(1/2)
+
     E_int = (σ_ξ_squared/rij_squared_σ)^6 - (σ_ξ_squared/rij_squared_σ)^3
     E_int = 4*ϵ_ξ*E_int
     return(E_int)
 end #E12_frac_lj 
 
 
-function potential_1_normal(r_box::Vector{MVector{3,Float64}},ri_box::MVector{3,Float64},i::Int64,r_frac_box::MVector{3,Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64)::Float64 #  ✅ 
+function potential_1_normal(r_box::Vector{MVector{3,Float64}},ri_box::MVector{3,Float64},i::Int64,r_frac_box::MVector{3,Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64,ϵ_ξ::Float64,σ_ξ_squared::Float64)::Float64 #  ✅ 
     #= Calculates the sum of the interaction potential between 1 special particle labelled i (e.g. the particle involved in a proposal move) in the r list and all others including the fractional particle
     Inputs:
         -r_box (Array of Float64s): 3xN position matrix of N normal particles in box units
@@ -92,7 +89,7 @@ function potential_1_normal(r_box::Vector{MVector{3,Float64}},ri_box::MVector{3,
     rij_squared_box = euclidean_distance_squared_pbc(ri_box,r_frac_box)
     if (rij_squared_box < r_cut_squared_box) && (rij_squared_box != 0.0)# if the distance is zero, E_12_frac_LJ returns NaN
         rij_squared_σ = rij_squared_box  * L_squared_σ  
-        E_int_σ = E_int_σ + E_12_frac_LJ(rij_squared_σ,λ,λ_max)
+        E_int_σ = E_int_σ + E_12_frac_LJ(rij_squared_σ,λ,λ_max,ϵ_ξ,σ_ξ_squared)
     elseif rij_squared_box == 0.0 # if this is the case need to just reject this config because LJ involves 1/rij which if rij=0 is undefined
             return(typemax(Float64))
     end
@@ -101,7 +98,7 @@ function potential_1_normal(r_box::Vector{MVector{3,Float64}},ri_box::MVector{3,
 
 end # potential_1_normal
 
-function potential_1_frac(r_box::Vector{MVector{3,Float64}},r_frac_box::MVector{3,Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64)::Float64
+function potential_1_frac(r_box::Vector{MVector{3,Float64}},r_frac_box::MVector{3,Float64},λ::Int64,λ_max::Int64,N::Int64,L_squared_σ::Float64,r_cut_squared_box::Float64,ϵ_ξ::Float64,σ_ξ_squared::Float64)::Float64
     #= this function calculates the sum of all interactions between the fractional particle and all the normal particles
         -r_box (Array of Float64s): 3xN position matrix of N normal particles in box units
         - r_frac_box (static array of Float64s): location of fractional particle in box units
@@ -120,7 +117,7 @@ function potential_1_frac(r_box::Vector{MVector{3,Float64}},r_frac_box::MVector{
         if (rij_squared_box < r_cut_squared_box) && (rij_squared_box > 0) # if rij_squared_box ==0 E_12_frac_LJ returns a NaN
             rij_squared_σ = rij_squared_box  * L_squared_σ 
             # here we would check for overlap normally and reject but we will not do this for the fractional particle because if λ=1 or something, could still have low energy if overlapped
-            E_int_σ = E_int_σ + E_12_frac_LJ(rij_squared_σ,λ,λ_max)
+            E_int_σ = E_int_σ + E_12_frac_LJ(rij_squared_σ,λ,λ_max,ϵ_ξ,σ_ξ_squared)
         elseif rij_squared_box == 0 # if this is the case need to just reject (or get out of) this config because LJ involves 1/rij which if rij=0 is undefined/+infinity
             return(typemax(Float64))
         end
@@ -157,25 +154,25 @@ function  λ_metropolis_pm1(μ::microstate,
 
         if μ.N == μ_prop.N # λ changed so change in configurational energy only has to do with fractional particle old vs new
             # following equation 10 desgranges
-           E_old = potential_1_frac(μ.r_box,μ.r_frac_box,   μ.λ   ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box) 
-           E_proposed = potential_1_frac(μ_prop.r_box,μ_prop.r_frac_box,      μ_prop.λ    ,sim.λ_max,μ_prop.N,sim.L_squared_σ,sim.r_cut_squared_box)
+           E_old = potential_1_frac(μ.r_box,μ.r_frac_box,   μ.λ   ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box, μ.ϵ_ξ,μ.σ_ξ_squared ) 
+           E_proposed = potential_1_frac(μ_prop.r_box,μ_prop.r_frac_box,      μ_prop.λ    ,sim.λ_max,μ_prop.N,sim.L_squared_σ,sim.r_cut_squared_box, μ_prop.ϵ_ξ,μ_prop.σ_ξ_squared)
            factorial_prefactor = 1
         
         elseif μ.N < μ_prop.N # particle created so λ = λ_max and λ_proposed = 0
             #  change in potential energy comes from fractional particle becoming full particle and the new fractional particle with λ=0 makes no contribution to energy
             # so E_Old = E_old_frac interaction with all others and E_new = E_new_full_particle interaction with all others
             factorial_prefactor = 1/μ_prop.N # only works for ±1
-            E_old = potential_1_frac(μ.r_box,μ.r_frac_box,  μ.λ   ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box)
+            E_old = potential_1_frac(μ.r_box,μ.r_frac_box,  μ.λ   ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared )
             i = length(μ_prop.r_box)
-            E_proposed = potential_1_normal(μ_prop.r_box , μ_prop.r_box[i],i,μ_prop.r_frac_box,μ_prop.λ,sim.λ_max,μ_prop.N,sim.L_squared_σ,sim.r_cut_squared_box)
+            E_proposed = potential_1_normal(μ_prop.r_box , μ_prop.r_box[i],i,μ_prop.r_frac_box,μ_prop.λ,sim.λ_max,μ_prop.N,sim.L_squared_σ,sim.r_cut_squared_box, μ_prop.ϵ_ξ,μ_prop.σ_ξ_squared)
                     
         elseif μ.N > μ_prop.N # particle destroyed so λ = 0 and λ_proposed = 99
             # old energy is energy of destroyed particle with rest of full particles 
             # new configurational energy is interaction of fractional particle with others
             factorial_prefactor = μ.N # only works for ±1
             # destroyed_particle = @view μ.r_box[:,idx_deleted]
-            E_old = potential_1_normal(μ.r_box,μ.r_box[idx_deleted],idx_deleted,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box)
-            E_proposed = potential_1_frac(μ_prop.r_box,μ_prop.r_frac_box,  μ_prop.λ   ,sim.λ_max,μ_prop.N ,sim.L_squared_σ,sim.r_cut_squared_box)
+            E_old = potential_1_normal(μ.r_box,μ.r_box[idx_deleted],idx_deleted,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared)
+            E_proposed = potential_1_frac(μ_prop.r_box,μ_prop.r_frac_box,  μ_prop.λ   ,sim.λ_max,μ_prop.N ,sim.L_squared_σ,sim.r_cut_squared_box,   μ_prop.ϵ_ξ,μ_prop.σ_ξ_squared)
         end # ΔN logic 
 
         ΔE = E_proposed - E_old
