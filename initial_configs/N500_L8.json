@@ -1,0 +1,7 @@
+{
+    "n":500,
+    "nc": 5,
+    "density":0.9765625,
+    "_comment3": "nc the number of fcc unit cells must be an int and nc = np.rint ( (n/4)**(1.0/3.0) ).astype(np.int_), so start picking all n and V in this order nc -> n -> density based on volume",
+    "_comment2":"run with $ head -n 50 inputs.json | ./initialize.py from the python_examples directory. The json must only contain 1 {} object, no [] otherwise it will be read as a list not a dict"
+}

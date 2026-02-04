@@ -2,7 +2,7 @@
 
 julia_version = "1.12.1"
 manifest_format = "2.0"
-project_hash = "697dd249194cb5a664bfd184eeb514b8ddc9616c"
+project_hash = "c3471951ee1e86cf6f8d5688953fe23d4666a5e3"
 
 [[deps.AbstractTrees]]
 git-tree-sha1 = "2d9c9a55f9c93e8887ad391fbae72f8ef55e1177"
@@ -665,7 +665,7 @@ uuid = "cf2c5f97-e748-59fa-a03f-dda3c62118cb"
 version = "2.0.0+0"
 
 [[deps.segc_wl]]
-deps = ["BenchmarkTools", "JLD2", "PProf", "Printf", "Profile", "Random", "StaticArrays"]
+deps = ["BenchmarkTools", "JLD2", "PProf", "Printf", "Profile", "Random", "Revise", "StaticArrays"]
 path = "."
 uuid = "ce517a80-2c89-4871-b5a9-77267e0ac583"
 version = "0.1.0"

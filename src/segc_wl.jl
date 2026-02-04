@@ -1,5 +1,6 @@
 module segc_wl
 using StaticArrays
+using Dates # mostly for debugging/monitoring long calculations
 include("initialization.jl")
 
 include("utils.jl")
@@ -21,6 +22,9 @@ export correct_Q
 
 
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars,c::SimCache)
+    log_path = joinpath(sim.save_directory_path, "wl_progress_log.txt")
+    progress_log = open(log_path,"a") # for debugging/monitoring long calculations
+
     f_convergence_threshold = exp(10^(-8)) # Desgranges paper convergence criterion has a typo, this is from Original 2001 Landau paper which is presumably what Desgranges et. al. meant
     logf_convergence_threshold = log(f_convergence_threshold)
     while (wl.logf ≥ logf_convergence_threshold ) && ( wl.iters < sim.maxiter)
@@ -40,6 +44,8 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
                 #save_wanglandau_jld2(wl,sim, "wl_checkpoint_before_rezeroing.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
                 wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
                 wl.logf = 0.5*wl.logf
+                println(progress_log,"New WL epoch!, now at ",wl.logf," and the time is ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS")) # MOSTLY FOR DEBUGGING AND MONITORING LONG CALCULATIONS
+                flush(progress_log)
             end
             if wl.iters % 50000 ==0 # save checkpoint every 50,000 moves 
                 save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")

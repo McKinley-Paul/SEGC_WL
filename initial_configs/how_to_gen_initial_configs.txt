@@ -1,0 +1,35 @@
+This code is written to take in initial configurations outputted in the format From Allen and Tildesly's 
+companion code to their book "Computer Simulation of Liquids". Specifically, I use the initialize.py file 
+from their github: https://github.com/Allen-Tildesley/examples/blob/master/python_examples/initialize.py
+
+you will need to setup a python environment with the necessary packages to run this program like numpy etc
+
+see their documentation for using this file in the initialization section of their GUIDE.MD file:
+ https://github.com/Allen-Tildesley/examples/blob/master/python_examples/GUIDE.md
+
+Typically, I like to specify some conditions in a .json file for it to use:
+ 
+ $ init_config_params.json | ./initialize.py
+
+Tips:
+    1) JSON must be a single {} object not a list
+    2) nc is the number of unit cells in the FCC to make and nc= round( (n/4)^(1/3)) and n so must equal 4*nc^3 
+    3) the box length is computed from the density, box = (n/density)^1/3
+    4) given the points above, this is how to make inputs to get ~100 particles in a volume of 512 \sigma^3 (i.e. box length of 8 sigma)
+        1) First you have to start from the FCC condition to get the closest number of particles to your target, because here 
+        N must be a multiple of 4 and specifically N = 4nc^3 then nc = 3 gives us 108 particles - close enough
+            nc = 1     then     n = 4
+            nc = 2     then     n = 32
+            nc = 3      then    n=108
+            nc = 4      then    n=256
+            nc = 5      then    n=500
+        2) now compute the density given N and V: 108/512 = 0.2109375
+        thus our JSON:
+
+{
+    "n":108,
+    "nc": 3,
+    "density":0.2109375,
+    "_comment3": "nc the number of fcc unit cells must be an int and nc = np.rint ( (n/4)**(1.0/3.0) ).astype(np.int_), so start picking all n and V in this order nc -> n -> density based on volume",
+    "_comment2":"run with $ head -n 50 inputs.json | ./initialize.py from the python_examples directory. The json must only contain 1 {} object, no [] otherwise it will be read as a list not a dict"
+}

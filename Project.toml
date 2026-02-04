@@ -5,6 +5,7 @@ authors = ["McKinleyPaul <mkpaulx@gmail.com>"]
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 PProf = "e4faabce-9ead-11e9-39d9-4379958e3056"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
@@ -15,6 +16,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 BenchmarkTools = "1.6.3"
+Dates = "1.11.0"
 JLD2 = "0.6.3"
 PProf = "3.2.0"
 Printf = "1.11.0"
