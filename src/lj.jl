@@ -76,11 +76,16 @@ function potential_1_normal(r_box::Vector{MVector{3,Float64}},ri_box::MVector{3,
             rij_squared_box = euclidean_distance_squared_pbc(ri_box,r_box[j])
             if rij_squared_box < r_cut_squared_box # only evaluate potential if pair is inside cutoff distance
                 rij_squared_σ = rij_squared_box  * L_squared_σ   # convert to potential natural units (i.e. lennard jones) to compute the potentials see allen and Tildesly one Note note for explanation why
-                if rij_squared_σ >  0.5 # close to overlap threshold given by allen and tildesly of potential E > 100, ours is E > 224
-                    E_int_σ = E_int_σ + E_12_LJ(rij_squared_σ)
-                else # if particles overlap quit early and return a huge energy
+                if rij_squared_σ != 0.0 # no overlap check but still can't be 0 distance because Lj is undefined/+infty there
+                    E_int_σ = E_int_σ + E_12_LJ(rij_squared_σ)  
+                else
                     return(typemax(Float64))
-                end 
+                end
+                # if rij_squared_σ >  0.5 # close to overlap threshold given by allen and tildesly of potential E > 100, ours is E > 224
+                #     E_int_σ = E_int_σ + E_12_LJ(rij_squared_σ)
+                # else # if particles overlap quit early and return a huge energy
+                #     return(typemax(Float64))
+                # end 
             end
         end
     end 

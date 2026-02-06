@@ -57,9 +57,10 @@ struct SimulationParams # immutable because structs are by default immutable in 
     L_squared_σ::Float64 # used to convert between box units (L_box=1) and LJ units
     r_cut_box::Float64
     r_cut_squared_box::Float64 # used for cutoff to avoid computing sqrts
+    dynamic_δr_max_box::Bool # set to true if you want to dynamically adjust δr_max_box during the run, false if you want to use a static one specified from the start
 
     # Now using an "Inner Constructor" to compute the derived parameters from only the input ones
-    function SimulationParams(; N_max,N_min,T_σ,Λ_σ,λ_max,r_cut_σ,input_filename,save_directory_path,rng=MersenneTwister(),maxiter=10^9) 
+    function SimulationParams(; N_max,N_min,T_σ,Λ_σ,λ_max,r_cut_σ,input_filename,save_directory_path,rng=MersenneTwister(),maxiter=10^9,dynamic_δr_max_box=true) 
         # the semicolon above in (; N_max ... ) makes it so all these are keyword arguments, not positional ones so you set them with like 'N_max=100' when initializing a SimulationParams struct
         # Compute derived quantities
         _, L_σ, _  = load_configuration(input_filename)
@@ -69,7 +70,7 @@ struct SimulationParams # immutable because structs are by default immutable in 
         r_cut_squared_box = r_cut_box^2
 
         new(N_max,N_min,T_σ,Λ_σ,λ_max,r_cut_σ,input_filename,save_directory_path,rng,maxiter,
-            L_σ,V_σ,L_squared_σ,r_cut_box ,r_cut_squared_box)
+            L_σ,V_σ,L_squared_σ,r_cut_box ,r_cut_squared_box,dynamic_δr_max_box)
     end
 end # SimulationParams
 
@@ -85,6 +86,23 @@ mutable struct WangLandauVars
     iters::Int64 # total number of monte carlo moves thus far
     δr_max_box::Float64
 end
+
+function init_WangLandauVars(λ_max::Int64,N_max::Int64,L_σ::Float64,wl::WangLandauVars,δr_max_box::Float64 = typemax(Float64))::WangLandauVars
+    # if you want to dynamically δr_max_box::Float64 = typemax(Float64)
+    if wl.dynamic_δr_max_box == true
+        δr_max_box = 0.15/L_σ 
+    elseif  ( wl.dynamic_δr_max_box == false ) && (δr_max_box == typemax(Float64) )
+        throw("you have wl.dynamic_δr_max_box set to false but did not provide a value of delta r_max_box to init_WangLandauVars")
+    end
+
+    logf = 1 
+    H_λN = zeros(Int64,λ_max+1,N_max+1)
+    logQ_λN=zeros(Float64,λ_max+1,N_max+1) # has λ_max + 1 because λ=0 goes in row 1, row 2  -> λ = 1 ... , row λ_max+1 -> λ = λ_max .. similar logic for N, N=0 goes in column 1, N_max goes in column (N_max + 1)
+    
+    wl = WangLandauVars(logf,H_λN,logQ_λN,0,0,0,0,0,δr_max_box)
+    return(wl)
+end
+
 
 function copy_microstate!(dest::microstate, src::microstate)
     dest.N = src.N
@@ -170,19 +188,25 @@ end # init microstate
 end    
 
 
-function init_WangLandauVars(λ_max::Int64,N_max::Int64,L_σ::Float64)::WangLandauVars
-    logf = 1 
-    H_λN = zeros(Int64,λ_max+1,N_max+1)
-    logQ_λN=zeros(Float64,λ_max+1,N_max+1) 
-    δr_max_box = 0.15/L_σ
-    wl = WangLandauVars(logf,H_λN,logQ_λN,0,0,0,0,0,δr_max_box)
-    return(wl)
-end
 
-function check_inputs(s::SimulationParams,μ::microstate)
+function check_inputs(s::SimulationParams,μ::microstate,wl::WangLandauVars)
     min_distance,particle_1,particle_2 = min_config_distance(μ.r_box)
     println("Minimum distance in box units (L_box=1) between particles in the initial configuration is: ",round(min_distance,digits=3), " between particles ",particle_1, " and ", particle_2)
     println("This is compared to length of σ in box units which is: ", round(1/s.L_σ,digits=3))
+
+    if s.dynamic_δr_max_box == false
+        println("SimulationParams.dynamic_δr_max_box is set to false, therefore wl.δr_max_box will not be updated during the run and 
+        will be set to ", wl.δr_max_box, " for the entire course of the wang landau simulation")
+    end
+    if (s.dynamic_δr_max_box == false) && (wl.δr_max_box = (0.15/s.L_σ))
+        println("wl.δr_max_box: ", wl.δr_max_box)
+        throw("You have SimulationParams.dynamic_δr_max_box set to false yet wl.δr_max_box is the 
+                 the default value of 0.15/ L_sigma")
+    elseif (s.dynamic_δr_max_box == true) && (wl.δr_max_box != (0.15/s.L_σ))
+        throw("You have SimulationParams.dynamic_δr_max_box set to true yet wl.δr_max_box is NOT the  
+                 the default value of 0.15/ L_sigma")
+        println("wl.δr_max_box: ", wl.δr_max_box)
+    end
 
     if μ.N != s.N_max
         throw(ArgumentError("Input mismatch: input config has $(μ.N) atoms but N_max is $(s.N_max), you have to start the simulation in the densest configuration"))

@@ -9,10 +9,10 @@ V = 512.0000 σ³
 Box Length L = 8.0000 σ
 DeBroglie Λ = 0.0751 σ
 Nmax = 500
-Nmin = 0
+Nmin = 366
 λmax = 99
 r_cut = 3.0000 σ
-Directory files saved in: /Users/mckinleypaul/Documents/montecarlo/segc_wl/test/lambda_max_opt/N500_M100
+Directory files saved in: /Users/mckinleypaul/Documents/montecarlo/segc_wl/test/lambda_max_opt/N500_M100_NMin_366_no_overlap
 
 Current microstate:
 N = 500.0000

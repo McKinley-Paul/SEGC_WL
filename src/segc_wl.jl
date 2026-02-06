@@ -39,7 +39,7 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
 
         # check flatness and save state:
         if wl.iters % 1000 ==0 # check flatness only every 1000 cycles
-            min = minimum(wl.H_λN)
+            min = minimum(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ]) # the zeroth particle sits in wl.H_λN[:,1] - the 1 indexed column
             if min ≥  1000 # this is our flatness criteria
                 #save_wanglandau_jld2(wl,sim, "wl_checkpoint_before_rezeroing.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
                 wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
@@ -47,7 +47,7 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
                 println(progress_log,"New WL epoch!, now at ",wl.logf," and the time is ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS")) # MOSTLY FOR DEBUGGING AND MONITORING LONG CALCULATIONS
                 flush(progress_log)
             end
-            if wl.iters % 50000 ==0 # save checkpoint every 50,000 moves 
+            if wl.iters % 100_000 ==0 # save checkpoint every 100,000 moves 
                 save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
                 save_microstate_jld2(μ,sim, "microstate_checkpoing.jld2")
             end
@@ -101,14 +101,16 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
 
     end # if i < N deciding to move normal or translational particle
 
-    if wl.logf == 1 # tune δr_max_box during first wang landau epoch
-        if (wl.translation_moves_accepted/wl.translation_moves_proposed > 0.55) && wl.δr_max_box < 1.0 # tune δr_max_box to get ~50% acceptance, pg 159 Allen Tildesly
-            # added the wl.δr_max_box < 1.0 because for dilute systems or ideal gas conditions you accept every move and the δr_max_box grows riducously and unphysically for a periodic system using  box=1 units
-            wl.δr_max_box = wl.δr_max_box * 1.05
+    if wl.dynamic_δr_max_box == true   
+        if wl.logf == 1 # tune δr_max_box during first wang landau epoch
+            if (wl.translation_moves_accepted/wl.translation_moves_proposed > 0.55) && wl.δr_max_box < 1.0 # tune δr_max_box to get ~50% acceptance, pg 159 Allen Tildesly
+                # added the wl.δr_max_box < 1.0 because for dilute systems or ideal gas conditions you accept every move and the δr_max_box grows riducously and unphysically for a periodic system using  box=1 units
+                wl.δr_max_box = wl.δr_max_box * 1.05
 
-        elseif wl.translation_moves_accepted/wl.translation_moves_proposed  < 0.45
-            wl.δr_max_box = wl.δr_max_box*0.95
-        end 
+            elseif wl.translation_moves_accepted/wl.translation_moves_proposed  < 0.45
+                wl.δr_max_box = wl.δr_max_box*0.95
+            end 
+        end
     end
 end# translation move
 
@@ -118,6 +120,7 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
     wl.λ_moves_proposed += 1
 
     λ_proposed = μ.λ + 2*rand(sim.rng,Bool) - 1 # change λ by ±1; can go out of our range, and can be -1 or 100 which is our signal to change N 
+    
     if -1 < λ_proposed ≤ sim.λ_max # λ_proposed < 99 for λ_max = 99 no change to N or anything besides λ
         c.μ_prop.λ = λ_proposed
         idx_deleted=0
@@ -178,7 +181,7 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
             c.μ_prop.σ_ξ_squared = μ.σ_ξ_squared
         end
 
-    elseif λ_proposed ≥ sim.λ_max # increment N 
+    elseif λ_proposed > sim.λ_max # increment N 
         c.μ_prop.λ = 0 
         c.μ_prop.N = μ.N+1
          if c.μ_prop.N  > sim.N_max # return early/reject move if we go out of bounds with too many particles (i.e. λ_prop = 100 when N=N_max)
@@ -217,6 +220,7 @@ function λ_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::Sim
     else
         throw("Error in λ move ΔN control flow")
     end # ΔN control flow
+
 end
 
 function update_wl!(wl::WangLandauVars,μ::microstate)

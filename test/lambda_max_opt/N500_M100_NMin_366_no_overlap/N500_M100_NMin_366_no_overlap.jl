@@ -19,7 +19,7 @@ N_max=500,
 N_min=366,
 T_σ=T_σ,
 Λ_σ = Λ_σ,
-λ_max = 9,
+λ_max = 99,
 r_cut_σ = 3.,
 input_filename=input_path,
 save_directory_path= @__DIR__ , 
@@ -33,18 +33,11 @@ cache = init_cache(sim,μstate)
 
 initialization_check(sim,μstate,wl)
 
-seconds = @elapsed run_simulation!(sim,μstate,wl,cache) # start 8:35pm and ended 1:40pm next day, so ~17h
+seconds = @elapsed run_simulation!(sim,μstate,wl,cache) # started at 7:07pm 
 
-
-#global seconds_avg += seconds
 post_run(sim,μstate,wl)
 
 logQ = correct_Q(wl)
-#     for ii in 1:length(logQ)
-#         logQ_avg[ii] += logQ[ii]
-#     end
-# end 
-# logQ_avg = logQ_avg.*(1/5) # average value of partition functions over five monte carlo runs
-# seconds_avg =  seconds_avg*(1/5)
+
 println(seconds) 
 println(logQ)

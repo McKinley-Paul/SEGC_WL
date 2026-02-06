@@ -1,1 +1,0 @@
-went into lj.jl and removed the overlap check condition from LJ forces

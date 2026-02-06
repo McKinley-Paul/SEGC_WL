@@ -1,14 +1,14 @@
-1770168991
+1770336456
 
-[74164] signal 2: Interrupt: 2
-in expression starting at /Users/mckinleypaul/Documents/montecarlo/segc_wl/test/lambda_max_opt/N500_M10_NMin_366/N500_M10_NMin_366.jl:36
+[3624] signal 2: Interrupt: 2
+in expression starting at /Users/mckinleypaul/Documents/montecarlo/segc_wl/test/lambda_max_opt/N500_M100_NMin_366_no_overlap/N500_M100_NMin_366_no_overlap.jl:36
 __psynch_cvwait at /usr/lib/system/libsystem_kernel.dylib (unknown line)
 unknown function (ip: 0x0) at (unknown file)
-potential_1_frac at /Users/mckinleypaul/Documents/montecarlo/segc_wl/src/lj.jl:117
-λ_metropolis_pm1 at /Users/mckinleypaul/Documents/montecarlo/segc_wl/src/lj.jl:157
-λ_move! at /Users/mckinleypaul/Documents/montecarlo/segc_wl/src/segc_wl.jl:128
-run_simulation! at /Users/mckinleypaul/Documents/montecarlo/segc_wl/src/segc_wl.jl:35
-unknown function (ip: 0x114e10833) at (unknown file)
+* at ./float.jl:497 [inlined]
+potential_1_normal at /Users/mckinleypaul/Documents/montecarlo/segc_wl/src/lj.jl:78
+translation_move! at /Users/mckinleypaul/Documents/montecarlo/segc_wl/src/segc_wl.jl:67
+run_simulation! at /Users/mckinleypaul/Documents/montecarlo/segc_wl/src/segc_wl.jl:33
+unknown function (ip: 0x11272888b) at (unknown file)
 top-level scope at ./timing.jl:461
 jl_toplevel_eval_flex at /Users/julia/.julia/scratchspaces/a66863c6-20e8-4ff4-8a62-49f30b1f605e/agent-cache/default-honeycrisp-XG3Q6T6R70.0/build/default-honeycrisp-XG3Q6T6R70-0/julialang/julia-release-1-dot-12/src/toplevel.c:1024
 jl_toplevel_eval_flex at /Users/julia/.julia/scratchspaces/a66863c6-20e8-4ff4-8a62-49f30b1f605e/agent-cache/default-honeycrisp-XG3Q6T6R70.0/build/default-honeycrisp-XG3Q6T6R70-0/julialang/julia-release-1-dot-12/src/toplevel.c:975
@@ -25,5 +25,8 @@ jl_apply at /Users/julia/.julia/scratchspaces/a66863c6-20e8-4ff4-8a62-49f30b1f60
 true_main at /Users/julia/.julia/scratchspaces/a66863c6-20e8-4ff4-8a62-49f30b1f605e/agent-cache/default-honeycrisp-XG3Q6T6R70.0/build/default-honeycrisp-XG3Q6T6R70-0/julialang/julia-release-1-dot-12/src/jlapi.c:971
 jl_repl_entrypoint at /Users/julia/.julia/scratchspaces/a66863c6-20e8-4ff4-8a62-49f30b1f605e/agent-cache/default-honeycrisp-XG3Q6T6R70.0/build/default-honeycrisp-XG3Q6T6R70-0/julialang/julia-release-1-dot-12/src/jlapi.c:1139
 unknown function (ip: 0x0) at (unknown file)
-Allocations: 82476909594 (Pool: 82476909453; Big: 141); GC: 78976
+Allocations: 3358501958 (Pool: 3358501764; Big: 194); GC: 378212
   Activating project at `~/Documents/montecarlo/segc_wl`
+Precompiling packages...
+    878.1 ms  ✓ segc_wl
+  1 dependency successfully precompiled in 1 seconds. 108 already precompiled.

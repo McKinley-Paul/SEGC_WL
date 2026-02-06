@@ -7,7 +7,7 @@ echo $start
 # julia won't naturally output to julia_out.txt until program is over 
 # so i added progress log to run_simulation!() to flush progress
 
-julia ./N500_M100.jl >> julia_out.txt
+julia ./N500_M100_NMin_366_no_overlap.jl >> julia_out.txt
 
 
 end=`date +%s`
