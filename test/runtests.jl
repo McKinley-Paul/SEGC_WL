@@ -337,22 +337,29 @@ println("")
         T_σ = 1.0 
         Λ_σ = argon_deBroglie(T_σ)
         sim = SimulationParams(
-            N_max=4,
-            N_min=0,
-            T_σ=T_σ,
-            Λ_σ = Λ_σ,
-            λ_max = 99,
-            r_cut_σ = 3.,
-            input_filename=input_path,
-            save_directory_path= @__DIR__ , 
-            maxiter=100_000_000)
+                        N_max=4,
+                        N_min=0,
+                        T_σ=T_σ,
+                        Λ_σ = Λ_σ,
+                        λ_max = 99,
+                        r_cut_σ = 2.5, # 3 sigma for replication of results, partition functions still pass for 2.5 though
+                        input_filename=input_path,
+                        save_directory_path= @__DIR__ , 
+                        maxiter=100_000_000)
+
         μstate = init_microstate(sim=sim,filename=input_path)
 
-        wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
+        wl = init_WangLandauVars(sim)
+
         cache = init_cache(sim,μstate)
 
-        run_simulation!(sim,μstate,wl,cache)
-        # post_run(sim,μstate,wl)
+        # initialization_check(sim,μstate,wl)
+
+        cl = CellList(sim.N_max + 1, sim.r_cut_box)
+        make_list!(cl, μstate.N, μstate.r_box)
+
+        run_simulation!(sim,cl,μstate,wl,cache)
+
         logQ = correct_Q(wl)
         logQ_N1 += logQ[2]
         logQ_N2 += logQ[3]
@@ -385,20 +392,29 @@ end
         T_σ = 1_000_000.0 
         Λ_σ = argon_deBroglie(T_σ)
         sim = SimulationParams(
-            N_max=4,
-            N_min=0,
-            T_σ=T_σ,
-            Λ_σ = Λ_σ,
-            λ_max = 99,
-            r_cut_σ = 3.,
-            input_filename=input_path,
-            save_directory_path= @__DIR__ , 
-            maxiter=100_000_000)
+                        N_max=4,
+                        N_min=0,
+                        T_σ=T_σ,
+                        Λ_σ = Λ_σ,
+                        λ_max = 99,
+                        r_cut_σ = 2.5, # 3 sigma for replication of results, partition function is similar for 2.5 and 3 sigma
+                        input_filename=input_path,
+                        save_directory_path= @__DIR__ , 
+                        maxiter=100_000_000)
+
         μstate = init_microstate(sim=sim,filename=input_path)
-        wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
+
+        wl = init_WangLandauVars(sim)
+
         cache = init_cache(sim,μstate)
 
-        run_simulation!(sim,μstate,wl,cache)
+        # initialization_check(sim,μstate,wl)
+
+        cl = CellList(sim.N_max + 1, sim.r_cut_box)
+        make_list!(cl, μstate.N, μstate.r_box)
+
+        run_simulation!(sim,cl,μstate,wl,cache)
+
         logQ = correct_Q(wl)
         for ii in 1:5
             logQ_avg[ii] += logQ[ii]

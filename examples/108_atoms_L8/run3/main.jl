@@ -3,15 +3,16 @@ using StaticArrays
 using Random
 
 import Pkg
-Pkg.activate(joinpath(@__DIR__, "../.."))
-using segc_wl   # or the module name inside segc_wl.jl
+Pkg.activate("/Users/mckinleypaul/Documents/montecarlo/segc_wl/src/")
+Pkg.activate("/Users/mckinleypaul/Documents/montecarlo/segc_wl")
+using segc_wl   
 
-input_path = joinpath(@__DIR__, "4_atom_cnf.inp")
+input_path =  "/Users/mckinleypaul/Documents/montecarlo/segc_wl/initial_configs/N108_L8.inp"
 T_σ = 1.0 
 Λ_σ = argon_deBroglie(T_σ)
 println(Λ_σ)
 sim = SimulationParams(
-    N_max=4,
+    N_max=108,
     N_min=0,
     T_σ=T_σ,
     Λ_σ = Λ_σ,
@@ -19,7 +20,7 @@ sim = SimulationParams(
     r_cut_σ = 2.5, # 3 sigma for replication of results, partition function is similar for 2.5 and 3 sigma
     input_filename=input_path,
     save_directory_path= @__DIR__ , 
-    maxiter=100_000_000)
+    maxiter=100_000_000_000_000) # 100 trillion iters 
 
 μstate = init_microstate(sim=sim,filename=input_path)
 
@@ -32,7 +33,7 @@ initialization_check(sim,μstate,wl)
 cl = CellList(sim.N_max + 1, sim.r_cut_box)
 make_list!(cl, μstate.N, μstate.r_box)
 
-@time run_simulation!(sim,cl,μstate,wl,cache)
+run_simulation!(sim,cl,μstate,wl,cache)
 
 post_run(sim,μstate,wl)
 

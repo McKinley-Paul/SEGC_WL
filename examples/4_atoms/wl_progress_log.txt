@@ -1,27 +1,54 @@
-New WL epoch!, now at 0.5 and the time is 2026-02-06 14:04:19
-New WL epoch!, now at 0.25 and the time is 2026-02-06 14:04:19
-New WL epoch!, now at 0.125 and the time is 2026-02-06 14:04:19
-New WL epoch!, now at 0.0625 and the time is 2026-02-06 14:04:19
-New WL epoch!, now at 0.03125 and the time is 2026-02-06 14:04:19
-New WL epoch!, now at 0.015625 and the time is 2026-02-06 14:04:19
-New WL epoch!, now at 0.0078125 and the time is 2026-02-06 14:04:19
-New WL epoch!, now at 0.00390625 and the time is 2026-02-06 14:04:19
-New WL epoch!, now at 0.001953125 and the time is 2026-02-06 14:04:20
-New WL epoch!, now at 0.0009765625 and the time is 2026-02-06 14:04:20
-New WL epoch!, now at 0.00048828125 and the time is 2026-02-06 14:04:20
-New WL epoch!, now at 0.000244140625 and the time is 2026-02-06 14:04:20
-New WL epoch!, now at 0.0001220703125 and the time is 2026-02-06 14:04:20
-New WL epoch!, now at 6.103515625e-5 and the time is 2026-02-06 14:04:20
-New WL epoch!, now at 3.0517578125e-5 and the time is 2026-02-06 14:04:21
-New WL epoch!, now at 1.52587890625e-5 and the time is 2026-02-06 14:04:21
-New WL epoch!, now at 7.62939453125e-6 and the time is 2026-02-06 14:04:21
-New WL epoch!, now at 3.814697265625e-6 and the time is 2026-02-06 14:04:21
-New WL epoch!, now at 1.9073486328125e-6 and the time is 2026-02-06 14:04:21
-New WL epoch!, now at 9.5367431640625e-7 and the time is 2026-02-06 14:04:21
-New WL epoch!, now at 4.76837158203125e-7 and the time is 2026-02-06 14:04:22
-New WL epoch!, now at 2.384185791015625e-7 and the time is 2026-02-06 14:04:22
-New WL epoch!, now at 1.1920928955078125e-7 and the time is 2026-02-06 14:04:22
-New WL epoch!, now at 5.960464477539063e-8 and the time is 2026-02-06 14:04:22
-New WL epoch!, now at 2.9802322387695312e-8 and the time is 2026-02-06 14:04:22
-New WL epoch!, now at 1.4901161193847656e-8 and the time is 2026-02-06 14:04:22
-New WL epoch!, now at 7.450580596923828e-9 and the time is 2026-02-06 14:04:23
+New WL epoch! logf = 0.5 at 2026-02-24 20:59:43
+New WL epoch! logf = 0.25 at 2026-02-24 20:59:43
+New WL epoch! logf = 0.125 at 2026-02-24 20:59:43
+New WL epoch! logf = 0.0625 at 2026-02-24 20:59:44
+New WL epoch! logf = 0.03125 at 2026-02-24 20:59:44
+New WL epoch! logf = 0.015625 at 2026-02-24 20:59:44
+New WL epoch! logf = 0.0078125 at 2026-02-24 20:59:44
+New WL epoch! logf = 0.00390625 at 2026-02-24 20:59:44
+New WL epoch! logf = 0.001953125 at 2026-02-24 20:59:44
+New WL epoch! logf = 0.0009765625 at 2026-02-24 20:59:44
+New WL epoch! logf = 0.00048828125 at 2026-02-24 20:59:44
+New WL epoch! logf = 0.000244140625 at 2026-02-24 20:59:44
+New WL epoch! logf = 0.0001220703125 at 2026-02-24 20:59:45
+New WL epoch! logf = 6.103515625e-5 at 2026-02-24 20:59:45
+New WL epoch! logf = 3.0517578125e-5 at 2026-02-24 20:59:45
+New WL epoch! logf = 1.52587890625e-5 at 2026-02-24 20:59:45
+New WL epoch! logf = 7.62939453125e-6 at 2026-02-24 20:59:45
+New WL epoch! logf = 3.814697265625e-6 at 2026-02-24 20:59:46
+New WL epoch! logf = 1.9073486328125e-6 at 2026-02-24 20:59:46
+New WL epoch! logf = 9.5367431640625e-7 at 2026-02-24 20:59:46
+New WL epoch! logf = 4.76837158203125e-7 at 2026-02-24 20:59:46
+New WL epoch! logf = 2.384185791015625e-7 at 2026-02-24 20:59:46
+New WL epoch! logf = 1.1920928955078125e-7 at 2026-02-24 20:59:46
+New WL epoch! logf = 5.960464477539063e-8 at 2026-02-24 20:59:47
+New WL epoch! logf = 2.9802322387695312e-8 at 2026-02-24 20:59:48
+New WL epoch! logf = 1.4901161193847656e-8 at 2026-02-24 20:59:48
+New WL epoch! logf = 7.450580596923828e-9 at 2026-02-24 20:59:48
+New WL epoch! logf = 0.5 at 2026-02-24 21:03:23
+New WL epoch! logf = 0.25 at 2026-02-24 21:03:24
+New WL epoch! logf = 0.125 at 2026-02-24 21:03:24
+New WL epoch! logf = 0.0625 at 2026-02-24 21:03:24
+New WL epoch! logf = 0.03125 at 2026-02-24 21:03:24
+New WL epoch! logf = 0.015625 at 2026-02-24 21:03:25
+New WL epoch! logf = 0.0078125 at 2026-02-24 21:03:25
+New WL epoch! logf = 0.00390625 at 2026-02-24 21:03:25
+New WL epoch! logf = 0.001953125 at 2026-02-24 21:03:25
+New WL epoch! logf = 0.0009765625 at 2026-02-24 21:03:26
+New WL epoch! logf = 0.00048828125 at 2026-02-24 21:03:26
+New WL epoch! logf = 0.000244140625 at 2026-02-24 21:03:27
+New WL epoch! logf = 0.0001220703125 at 2026-02-24 21:03:27
+New WL epoch! logf = 6.103515625e-5 at 2026-02-24 21:03:28
+New WL epoch! logf = 3.0517578125e-5 at 2026-02-24 21:03:29
+New WL epoch! logf = 1.52587890625e-5 at 2026-02-24 21:03:30
+New WL epoch! logf = 7.62939453125e-6 at 2026-02-24 21:03:31
+New WL epoch! logf = 3.814697265625e-6 at 2026-02-24 21:03:33
+New WL epoch! logf = 1.9073486328125e-6 at 2026-02-24 21:03:34
+New WL epoch! logf = 9.5367431640625e-7 at 2026-02-24 21:03:34
+New WL epoch! logf = 4.76837158203125e-7 at 2026-02-24 21:03:35
+New WL epoch! logf = 2.384185791015625e-7 at 2026-02-24 21:03:37
+New WL epoch! logf = 1.1920928955078125e-7 at 2026-02-24 21:03:38
+New WL epoch! logf = 5.960464477539063e-8 at 2026-02-24 21:03:38
+New WL epoch! logf = 2.9802322387695312e-8 at 2026-02-24 21:03:39
+New WL epoch! logf = 1.4901161193847656e-8 at 2026-02-24 21:03:40
+New WL epoch! logf = 7.450580596923828e-9 at 2026-02-24 21:03:41

@@ -14,3 +14,8 @@ git checkout -b my-new-branch
 # this creates the branch and switches you onto it
 git push -u origin my-new-branch
 # the -u makes future git push and git pull default to this branch
+
+
+# to move branches (moving to "main" in this example):
+git branch
+git switch branch-you-want-tswitch-to
