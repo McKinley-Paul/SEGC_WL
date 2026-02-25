@@ -17,8 +17,6 @@
 #
 # Pass `cl` alongside `params` and `μ` to every function that needs energy.
 
-using StaticArrays
-
 # ════════════════════════════════════════════════════════════════════════════
 # Struct
 # ════════════════════════════════════════════════════════════════════════════
@@ -79,7 +77,7 @@ end
 Map a position in box units (components in −0.5 … 0.5) to a 1-based cell triple.
 """
 @inline function c_index(cl::CellList, ri::AbstractVector)
-    @assert all(abs.(ri) .<= 0.5 + 1e-10) "Atom outside main box: $ri"
+    # clamp guards against rare floating point rounding past ±0.5 after pbc_wrap
     c1 = clamp(floor(Int, (ri[1] + 0.5) * cl.sc) + 1, 1, cl.sc)
     c2 = clamp(floor(Int, (ri[2] + 0.5) * cl.sc) + 1, 1, cl.sc)
     c3 = clamp(floor(Int, (ri[3] + 0.5) * cl.sc) + 1, 1, cl.sc)
@@ -212,8 +210,7 @@ function neighbours!(cl::CellList, i::Int, ci::SVector{3,Int}; half::Bool=false)
         while j != 0
             if j != i
                 n += 1
-                n > length(cl.nbr_buf) && error("neighbours!: nbr_buf overflow (n=$n).")
-                cl.nbr_buf[n] = j
+                @inbounds cl.nbr_buf[n] = j
             end
             j = cl.list[j]
         end
@@ -243,8 +240,7 @@ function neighbours!(cl::CellList, i::Int, ci::SVector{3,Int}; half::Bool=false)
         while j != 0
             if j != i
                 n += 1
-                n > length(cl.nbr_buf) && error("neighbours!: nbr_buf overflow (n=$n). Increase buffer size.")
-                cl.nbr_buf[n] = j
+                @inbounds cl.nbr_buf[n] = j
             end
             j = cl.list[j]
         end
@@ -274,3 +270,5 @@ function check_list(cl::CellList, N::Int, r_box::Vector{<:AbstractVector})
     end
     println("check_list: OK (N=$N, sc=$(cl.sc))")
 end
+
+

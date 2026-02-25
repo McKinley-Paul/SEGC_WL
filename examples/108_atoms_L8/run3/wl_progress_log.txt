@@ -1,8 +1,0 @@
-New WL epoch! logf = 0.5 at 2026-02-24 22:14:11
-New WL epoch! logf = 0.25 at 2026-02-24 22:15:05
-New WL epoch! logf = 0.125 at 2026-02-24 22:15:54
-New WL epoch! logf = 0.0625 at 2026-02-24 22:16:39
-New WL epoch! logf = 0.03125 at 2026-02-24 22:17:46
-New WL epoch! logf = 0.015625 at 2026-02-24 22:19:04
-New WL epoch! logf = 0.0078125 at 2026-02-24 22:20:44
-New WL epoch! logf = 0.00390625 at 2026-02-24 22:25:59

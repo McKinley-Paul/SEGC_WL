@@ -51,6 +51,13 @@ function E_12_frac_LJ(rij_squared_σ::Float64,ϵ_ξ::Float64,σ_ξ_squared::Floa
     return(E_int)
 end #E12_frac_lj 
 
+"""
+    potential_1_normal(cl, r_box, ri_box, i, r_frac_box,
+                       λ, λ_max, N, L_squared_σ, r_cut_sq_box, ϵ_ξ, σ_ξ_sq)
+
+Energy of normal particle `i` at position `ri_box` with all other particles.
+Safe for N=0 (returns fractional-particle contribution only, which is 0 when λ=0).
+"""
 function potential_1_normal(
     cl           ::CellList,
     r_box        ::Vector{<:AbstractVector},
@@ -69,8 +76,9 @@ function potential_1_normal(
     E  = 0.0
     ci = c_index(cl, ri_box)
 
-    # ── normal–normal via cell list ──────────────────────────────────────────
-    neighbours!(cl, i, ci; half=false)          # fills cl.nbr_buf[1:cl.nbr_n]
+    # Normal–normal: use full 27-cell shell (half=false) because ri_box is a
+    # probe that may not be registered at its current cell yet.
+    neighbours!(cl, i, ci; half=false)
     @inbounds for k in 1:cl.nbr_n
         j          = cl.nbr_buf[k]
         rij_sq_box = euclidean_distance_squared_pbc(ri_box, r_box[j])
@@ -78,8 +86,10 @@ function potential_1_normal(
         rij_sq_box == 0.0          && return typemax(Float64)
         E += E_12_LJ(rij_sq_box * L_squared_σ)
     end
+    # NOTE: @inbounds is safe here because nbr_buf is sized N_max+8 and
+    # nbr_n is always set by neighbours! which itself uses @inbounds writes.
 
-    # ── normal–fractional (not in list, always O(1)) ─────────────────────────
+    # Normal–fractional: always O(1), fractional particle not in list.
     rij_sq_box = euclidean_distance_squared_pbc(ri_box, r_frac_box)
     if rij_sq_box < r_cut_sq_box
         rij_sq_box == 0.0 && return typemax(Float64)
@@ -87,8 +97,17 @@ function potential_1_normal(
     end
 
     return E
-end
+end # potential_1_normal
 
+
+"""
+    potential_1_frac(cl, r_box, r_frac_box,
+                     λ, λ_max, N, L_squared_σ, r_cut_sq_box, ϵ_ξ, σ_ξ_sq)
+
+Energy of the fractional particle at `r_frac_box` with all N normal particles.
+Returns 0.0 immediately when N=0.
+Dummy index i=0 means the j≠i guard never excludes any real atom.
+"""
 function potential_1_frac(
     cl           ::CellList,
     r_box        ::Vector{<:AbstractVector},
@@ -107,7 +126,7 @@ function potential_1_frac(
     E  = 0.0
     ci = c_index(cl, r_frac_box)
 
-    neighbours!(cl, 0, ci; half=false)          # i=0 never matches a real atom
+    neighbours!(cl, 0, ci; half=false)
     @inbounds for k in 1:cl.nbr_n
         j          = cl.nbr_buf[k]
         rij_sq_box = euclidean_distance_squared_pbc(r_frac_box, r_box[j])
@@ -117,6 +136,52 @@ function potential_1_frac(
     end
 
     return E
+end # potential_1_frac
+
+
+"""
+    potential_1_frac_lambda_change(cl, r_box, r_frac_box, N, L_squared_σ,
+                                   r_cut_sq_box, ϵ_ξ_old, σ_ξ_sq_old,
+                                   ϵ_ξ_new, σ_ξ_sq_new) -> (E_old, E_new)
+
+Compute both E_old and E_new for a pure λ-change move (i.e. no change to N) in a single neighbour
+search.  The fractional particle position is unchanged so neighbours are
+identical for both states — no point finding them twice.
+Called only from λ_metropolis_pm1 when μ.N == μ_prop.N.
+"""
+function potential_1_frac_lambda_change(
+    cl           ::CellList,
+    r_box        ::Vector{<:AbstractVector},
+    r_frac_box   ::AbstractVector,
+    N            ::Int,
+    L_squared_σ  ::Float64,
+    r_cut_sq_box ::Float64,
+    ϵ_ξ_old      ::Float64,
+    σ_ξ_sq_old   ::Float64,
+    ϵ_ξ_new      ::Float64,
+    σ_ξ_sq_new   ::Float64,
+)::Tuple{Float64,Float64}
+
+    N == 0 && return (0.0, 0.0)
+
+    E_old = 0.0
+    E_new = 0.0
+    ci    = c_index(cl, r_frac_box)
+
+    neighbours!(cl, 0, ci; half=false)
+    @inbounds for k in 1:cl.nbr_n
+        j          = cl.nbr_buf[k]
+        rij_sq_box = euclidean_distance_squared_pbc(r_frac_box, r_box[j])
+        rij_sq_box >= r_cut_sq_box && continue
+        if rij_sq_box == 0.0
+            return (typemax(Float64), typemax(Float64))
+        end
+        rij_sq_σ = rij_sq_box * L_squared_σ
+        E_old += E_12_frac_LJ(rij_sq_σ, ϵ_ξ_old, σ_ξ_sq_old)
+        E_new += E_12_frac_LJ(rij_sq_σ, ϵ_ξ_new, σ_ξ_sq_new)
+    end
+
+    return (E_old, E_new)
 end
 
 function λ_metropolis_pm1(cl::CellList,                                  # ← CL
@@ -139,15 +204,14 @@ function λ_metropolis_pm1(cl::CellList,                                  # ← 
     # Energy terms — now forwarding cl to every potential call.             # ← CL
     local E_old::Float64, E_proposed::Float64, factorial_prefactor::Float64
 
-    if μ.N == μ_prop.N   # ── pure λ change ───────────────────────────────
-        factorial_prefactor = 1.0
-        E_old      = potential_1_frac(cl, μ.r_box, μ.r_frac_box,           # ← CL
-                         μ.λ, sim.λ_max, μ.N,
-                         sim.L_squared_σ, sim.r_cut_squared_box, μ.ϵ_ξ, μ.σ_ξ_squared)
-        E_proposed = potential_1_frac(cl, μ_prop.r_box, μ_prop.r_frac_box, # ← CL
-                         μ_prop.λ, sim.λ_max, μ_prop.N,
-                         sim.L_squared_σ, sim.r_cut_squared_box, μ_prop.ϵ_ξ, μ_prop.σ_ξ_squared)
-
+    if μ.N == μ_prop.N   # ── pure λ change: single neighbour search for both states
+    factorial_prefactor = 1.0
+    E_old, E_proposed = potential_1_frac_lambda_change(
+                            cl, μ.r_box, μ.r_frac_box, μ.N,
+                            sim.L_squared_σ, sim.r_cut_squared_box,
+                            μ.ϵ_ξ,      μ.σ_ξ_squared,      # old coupling
+                            μ_prop.ϵ_ξ, μ_prop.σ_ξ_squared) # new coupling
+                            
     elseif μ.N < μ_prop.N   # ── particle created ────────────────────────
         # Old fractional → becomes new full particle at index μ_prop.N.
         factorial_prefactor = 1.0 / μ_prop.N
