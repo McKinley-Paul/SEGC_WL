@@ -1,0 +1,8 @@
+{
+    "n":108,
+    "nc": 3,
+    "density":0.88,
+    "_comment3":"nc the number of fcc unit cells must be an int and nc = np.rint ( (n/4)**(1.0/3.0) ).astype(np.int_), so start picking all n and V in this order nc -> n -> density based on volume",
+    "_comment2":"run with $ head -n 50 inputs.json | ./initialize.py from the python_examples directory. The json must only contain 1 {} object, no [] otherwise it will be read as a list not a dict",
+    "_comment4":"same density as N=450 particles at V=512sigma"
+}

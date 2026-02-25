@@ -1,0 +1,45 @@
+Minimum distance in box units (L_box=1) between particles in the initial configuration is: 0.141 between particles 2 and 25
+This is compared to length of σ in box units which is: 0.125
+
+           Starting SEGC Wang Landau Simulation        
+Due to the occurence of Λ in the metropolis criterion, this simulation cannot be fully carried out for lennard jonesium and is here specific to Argon
+T* = 1.0000
+V = 512.0000 σ³
+Box Length L = 8.0000 σ
+DeBroglie Λ = 0.0751 σ
+Nmax = 500
+Nmin = 400
+λmax = 99
+r_cut = 3.0000 σ
+Directory files saved in: /Users/mckinleypaul/Documents/montecarlo/segc_wl/test/hyper_parameter_tuning/desgranges_potential/frac_particle_moves/75
+
+Current microstate:
+N = 500.0000
+λ = 0.0000
+Starting run now, time is 2026-02-06 18:17:33
+Minimum distance in box units (L_box=1) between particles in the initial configuration is: 0.141 between particles 2 and 25
+This is compared to length of σ in box units which is: 0.125
+
+           Starting SEGC Wang Landau Simulation        
+Due to the occurence of Λ in the metropolis criterion, this simulation cannot be fully carried out for lennard jonesium and is here specific to Argon
+T* = 1.0000
+V = 512.0000 σ³
+Box Length L = 8.0000 σ
+DeBroglie Λ = 0.0751 σ
+Nmax = 500
+Nmin = 400
+λmax = 99
+r_cut = 3.0000 σ
+Directory files saved in: /Users/mckinleypaul/Documents/montecarlo/segc_wl/test/hyper_parameter_tuning/desgranges_potential/frac_particle_moves/75
+
+Current microstate:
+N = 500.0000
+λ = 0.0000
+Starting run now, time is 2026-02-06 18:22:12
+Wang Landau converged or reached max iterations, logf has reached 1.0 and convergence is achieved when logf reaches 9.999999889225291e-9
+Iterations: 100000000 with maxiters: 100000000
+Total translation moves proposed: 74992501, translation moves accepted: 38605148, Acceptance ratio: 0.514786778480691
+Total λ moves proposed: 25007499, λ moves accepted: 14475981, Acceptance ratio: 0.5788656034735821
+Final Microstate and Wang Landau variables saved
+276.323894
+[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 54201.0, 46601.0, 44096.0, 43036.0, 41495.0, 39945.0, 38580.0, 37783.0, 37138.0, 35875.0, 34730.0, 32453.0, 31378.0, 30091.0, 29024.0, 27925.0, 26901.0, 26204.0, 25324.0, 24432.0, 22588.0, 21600.0, 20817.0, 19639.0, 18860.0, 18148.0, 16759.0, 15687.0, 14252.0, 13612.0, 12388.0, 11642.0, 10767.0, 9950.0, 9246.0, 8362.0, 7598.0, 6781.0, 6026.0, 5396.0, 4534.0, 3731.0, 3119.0, 2550.0, 1832.0, 1377.0, 904.0, 818.0, 477.0, 151.0, 3.0, 3.0, 22.0, 7.0, 63.0, 52.0, 26.0, 9.0, 26.0, 42.0, 64.0, 4.0, 69.0, 33.0, 21.0, 8.0, 15.0, 6.0, 4.0, 2.0, 15.0, 5.0, 10.0, 3.0, 2.0, 1.0, 32.0, 20.0, 7.0, 17.0, 24.0, 18.0, 16.0, 15.0, 25.0, 41.0, 44.0, 4.0, 8.0, 10.0, 1.0, 13.0, 11.0, 1.0, 10.0, 30.0, 19.0, 28.0, 3.0, 1.0, 5.0]

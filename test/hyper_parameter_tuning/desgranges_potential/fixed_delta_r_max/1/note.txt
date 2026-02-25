@@ -1,0 +1,3 @@
+top 1% in density would be a density of 495-500 particles
+going to let this one finish just to see how long 500 particles takes to converge
+only over 5 N states 

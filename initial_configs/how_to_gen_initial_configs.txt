@@ -9,7 +9,7 @@ see their documentation for using this file in the initialization section of the
 
 Typically, I like to specify some conditions in a .json file for it to use:
  
- $ init_config_params.json | ./initialize.py
+ $ head -n 50 inputs.json | ./initialize.py
 
 Tips:
     1) JSON must be a single {} object not a list

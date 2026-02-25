@@ -1,0 +1,28 @@
+this one has it how i had it:
+
+
+function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::SimCache) #✅
+    # wrote the body of all these functions before refactoring into structs, could rewrite at some point because ugly
+    wl.translation_moves_proposed += 1
+
+    c.ζ_idx = rand(sim.rng,1:(μ.N+1)) # randomly pick atom to move, includes fractional particle
+    if c.ζ_idx  < μ.N # move normal particle    
+        c.ri_proposed_box .= μ.r_box[c.ζ_idx]
+        translate_by_random_vector!(c.ri_proposed_box, wl.δr_max_box, sim.rng,c) # Trial move to new position (in box=1 units), this used to be ri_proposed_box before cache
+        pbc_wrap!(c.ri_proposed_box)   # PBC
+        E_proposed = potential_1_normal(μ.r_box,c.ri_proposed_box,c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared ) 
+
+        if E_proposed == typemax(Float64) # check overlap
+            nothing # reject the move and recount this state for histogram and partition function 
+        else   
+            E_old =potential_1_normal(μ.r_box,μ.r_box[c.ζ_idx],c.ζ_idx,μ.r_frac_box,μ.λ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared ) 
+            ΔE = E_proposed - E_old 
+            accept = metropolis(ΔE,sim.T_σ,sim.rng) 
+            if accept
+                μ.r_box[c.ζ_idx] .= c.ri_proposed_box
+                c.μ_prop.r_box[c.ζ_idx] .= c.ri_proposed_box
+                wl.translation_moves_accepted += 1
+            end
+        end
+
+    else # move fractional particle

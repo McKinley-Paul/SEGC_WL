@@ -1,0 +1,19 @@
+Minimum distance in box units (L_box=1) between particles in the initial configuration is: 0.236 between particles 1 and 2
+This is compared to length of σ in box units which is: 0.201
+
+           Starting SEGC Wang Landau Simulation        
+Due to the occurence of Λ in the metropolis criterion, this simulation cannot be fully carried out for lennard jonesium and is here specific to Argon
+T* = 1.0000
+V = 122.7273 σ³
+Box Length L = 4.9695 σ
+DeBroglie Λ = 0.0751 σ
+Nmax = 108
+Nmin = 0
+λmax = 99
+r_cut = 3.0000 σ
+Directory files saved in: /Users/mckinleypaul/Documents/montecarlo/segc_wl/examples/4_atoms/N108_runs/run2
+
+Current microstate:
+N = 108.0000
+λ = 0.0000
+Starting run now, time is 2026-02-13 18:43:38

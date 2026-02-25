@@ -1,0 +1,34 @@
+changes that made things sample frac particle a given percent of time:
+
+in trasnlation_move!
+
+
+function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVars,c::SimCache) #✅
+    # wrote the body of all these functions before refactoring into structs, could rewrite at some point because ugly
+    wl.translation_moves_proposed += 1
+
+    # doing it this way generating another random number and allocates but whatever it can optimize later
+    whatever = rand()
+
+    if whatever  > sim.percent_fractional_translation_moves # move normal particle
+        c.ζ_idx = rand(sim.rng,1:μ.N)    # had to move this inside now this is the particle index to move
+        c.ri_proposed_box .= μ.r_box[c.ζ_idx]
+
+
+in SimulationParams
+
+    percent_fractional_translation_moves::Float64 # what percent of translational moves you want to move the fractional particle with, i.e. 0.3 = 30%                               
+
+    # Now using an "Inner Constructor" to compute the derived parameters from only the input ones
+    function SimulationParams(; N_max,N_min,T_σ,Λ_σ,λ_max,r_cut_σ,input_filename,save_directory_path,rng=MersenneTwister(),maxiter=10^9,dynamic_δr_max_box=true,percent_fractional_translation_moves = 0.1) 
+        # the semicolon above in (; N_max ... ) makes it so all these are keyword arguments, not positional ones so you set them with like 'N_max=100' when initializing a SimulationParams struct
+        # Compute derived quantities
+        _, L_σ, _  = load_configuration(input_filename)
+        V_σ = L_σ^3
+        L_squared_σ = L_σ^2
+        r_cut_box = r_cut_σ/L_σ
+        r_cut_squared_box = r_cut_box^2
+
+        new(N_max,N_min,T_σ,Λ_σ,λ_max,r_cut_σ,input_filename,save_directory_path,rng,maxiter,
+            L_σ,V_σ,L_squared_σ,r_cut_box ,r_cut_squared_box,dynamic_δr_max_box,percent_fractional_translation_moves)
+    end

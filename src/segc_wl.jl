@@ -50,6 +50,7 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
             if wl.iters % 100_000 ==0 # save checkpoint every 100,000 moves 
                 save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
                 save_microstate_jld2(μ,sim, "microstate_checkpoing.jld2")
+                flush(stdout)
             end
         end #flatness/printing
     end # while logf ≥ logf_convergence_threshold
@@ -60,6 +61,7 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
     wl.translation_moves_proposed += 1
 
     c.ζ_idx = rand(sim.rng,1:(μ.N+1)) # randomly pick atom to move, includes fractional particle
+    
     if c.ζ_idx  < μ.N # move normal particle    
         c.ri_proposed_box .= μ.r_box[c.ζ_idx]
         translate_by_random_vector!(c.ri_proposed_box, wl.δr_max_box, sim.rng,c) # Trial move to new position (in box=1 units), this used to be ri_proposed_box before cache
@@ -101,7 +103,7 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
 
     end # if i < N deciding to move normal or translational particle
 
-    if wl.dynamic_δr_max_box == true   
+    if sim.dynamic_δr_max_box == true   
         if wl.logf == 1 # tune δr_max_box during first wang landau epoch
             if (wl.translation_moves_accepted/wl.translation_moves_proposed > 0.55) && wl.δr_max_box < 1.0 # tune δr_max_box to get ~50% acceptance, pg 159 Allen Tildesly
                 # added the wl.δr_max_box < 1.0 because for dilute systems or ideal gas conditions you accept every move and the δr_max_box grows riducously and unphysically for a periodic system using  box=1 units

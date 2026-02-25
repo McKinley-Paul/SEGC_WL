@@ -46,9 +46,34 @@ function E_12_frac_LJ(rij_squared_σ::Float64,λ::Int64,λ_max::Int64,ϵ_ξ::Flo
     # assumes that rij_squared_σ was computed using the correct minimum image PBC 
     =# 
 
+    # Original Desgranges potential:
     E_int = (σ_ξ_squared/rij_squared_σ)^6 - (σ_ξ_squared/rij_squared_σ)^3
     E_int = 4*ϵ_ξ*E_int
     return(E_int)
+
+    # # LAMMPS (https://docs.lammps.org/pair_fep_soft.html) softcore one: 
+    # M = λ_max + 1
+    # s = λ / M
+
+    # r6 = rij_squared_σ^3
+
+    # E_int = 1 / (0.5*(1-s)^2 + r6)^2 - 1 / (0.5*(1-s)^2 + r6)
+
+    # return 4s * E_int
+
+    # # HYBRID:
+    # if λ == 0  # needed to avoid divide by zero issue
+    #     return(0)
+    # else
+    #     M = λ_max + 1
+    #     s = λ / M
+
+    #     r6 = ( rij_squared_σ^3 / s^6)
+
+    #     E_int = 1 / (0.5*(1-s)^2 + r6)^2 - 1 / (0.5*(1-s)^2 + r6)
+
+    #     return 4s * E_int
+    # end
 end #E12_frac_lj 
 
 

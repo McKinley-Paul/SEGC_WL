@@ -1,0 +1,41 @@
+Originally fractional potential was: 
+
+function E_12_frac_LJ(rij_squared_σ::Float64,λ::Int64,λ_max::Int64,ϵ_ξ::Float64,σ_ξ_squared::Float64)::Float64 #  ✅ 
+    #= computes interaction between fractional particle and normal LJ particle according to equation 16 of Desgranges 2016. Note that `M` in Desgranges = λ_max + 1 in our notation
+    returns energy in lennard jones units
+    # takes in ϵ_ξ and σ_ξ_squared instead of precomputing because they only need to be computed 1 time every time λ changes
+    # assumes that rij_squared_σ was computed using the correct minimum image PBC 
+    =# 
+
+    E_int = (σ_ξ_squared/rij_squared_σ)^6 - (σ_ξ_squared/rij_squared_σ)^3
+    E_int = 4*ϵ_ξ*E_int
+    return(E_int)
+end #E12_frac_lj 
+
+
+for this one I am changing it to be a HYBRID of the  soft core one LAMMPS uses (https://docs.lammps.org/pair_fep_soft.html)
+and the potential desgranges uses:
+
+function E_12_frac_LJ(rij_squared_σ::Float64,λ::Int64,λ_max::Int64,ϵ_ξ::Float64,σ_ξ_squared::Float64)::Float64 #  ✅ 
+    #= computes interaction between fractional particle and normal LJ particle according to equation 16 of Desgranges 2016. Note that `M` in Desgranges = λ_max + 1 in our notation
+    returns energy in lennard jones units
+    # takes in ϵ_ξ and σ_ξ_squared instead of precomputing because they only need to be computed 1 time every time λ changes
+    # assumes that rij_squared_σ was computed using the correct minimum image PBC 
+    =# 
+
+    # HYBRID:
+    if λ == 0  # needed to avoid divide by zero issue
+        return(0)
+    else
+        M = λ_max + 1
+        s = λ / M
+
+        r6 = ( rij_squared_σ^3 / s^6)
+
+        E_int = 1 / (0.5*(1-s)^2 + r6)^2 - 1 / (0.5*(1-s)^2 + r6)
+
+        return 4s * E_int
+    end
+
+
+end #E12_frac_lj 

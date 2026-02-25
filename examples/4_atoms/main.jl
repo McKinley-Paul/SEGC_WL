@@ -23,7 +23,7 @@ sim = SimulationParams(
 
 μstate = init_microstate(sim=sim,filename=input_path)
 
-wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
+wl = init_WangLandauVars(sim)
 
 cache = init_cache(sim,μstate)
 

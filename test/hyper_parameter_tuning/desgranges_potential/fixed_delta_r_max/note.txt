@@ -1,0 +1,3 @@
+in this file we are experimenting with using a fixed δr_max_box
+that comes from the top 5-10% of number of particles for a given 
+desired samplespace
