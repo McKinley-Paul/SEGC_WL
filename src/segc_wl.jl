@@ -101,7 +101,7 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
 
     end # if i < N deciding to move normal or translational particle
 
-    if wl.dynamic_δr_max_box == true   
+    if sim.dynamic_δr_max_box == true   
         if wl.logf == 1 # tune δr_max_box during first wang landau epoch
             if (wl.translation_moves_accepted/wl.translation_moves_proposed > 0.55) && wl.δr_max_box < 1.0 # tune δr_max_box to get ~50% acceptance, pg 159 Allen Tildesly
                 # added the wl.δr_max_box < 1.0 because for dilute systems or ideal gas conditions you accept every move and the δr_max_box grows riducously and unphysically for a periodic system using  box=1 units

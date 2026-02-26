@@ -87,17 +87,17 @@ mutable struct WangLandauVars
     δr_max_box::Float64
 end
 
-function init_WangLandauVars(λ_max::Int64,N_max::Int64,L_σ::Float64,wl::WangLandauVars,δr_max_box::Float64 = typemax(Float64))::WangLandauVars
+function init_WangLandauVars(sim::SimulationParams,δr_max_box::Float64 = typemax(Float64))::WangLandauVars
     # if you want to dynamically δr_max_box::Float64 = typemax(Float64)
-    if wl.dynamic_δr_max_box == true
-        δr_max_box = 0.15/L_σ 
-    elseif  ( wl.dynamic_δr_max_box == false ) && (δr_max_box == typemax(Float64) )
-        throw("you have wl.dynamic_δr_max_box set to false but did not provide a value of delta r_max_box to init_WangLandauVars")
+    if sim.dynamic_δr_max_box == true
+        δr_max_box = 0.15/sim.L_σ 
+    elseif  ( sim.dynamic_δr_max_box == false ) && (δr_max_box == typemax(Float64) )
+        throw("you have sim.dynamic_δr_max_box set to false but did not provide a value of delta r_max_box to init_WangLandauVars")
     end
 
     logf = 1 
-    H_λN = zeros(Int64,λ_max+1,N_max+1)
-    logQ_λN=zeros(Float64,λ_max+1,N_max+1) # has λ_max + 1 because λ=0 goes in row 1, row 2  -> λ = 1 ... , row λ_max+1 -> λ = λ_max .. similar logic for N, N=0 goes in column 1, N_max goes in column (N_max + 1)
+    H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
+    logQ_λN=zeros(Float64,sim.λ_max+1,sim.N_max+1) # has λ_max + 1 because λ=0 goes in row 1, row 2  -> λ = 1 ... , row λ_max+1 -> λ = λ_max .. similar logic for N, N=0 goes in column 1, N_max goes in column (N_max + 1)
     
     wl = WangLandauVars(logf,H_λN,logQ_λN,0,0,0,0,0,δr_max_box)
     return(wl)
@@ -288,7 +288,7 @@ function print_wl(wl::WangLandauVars,verbose=true)
 end # print_wl
 
 function initialization_check(sim::SimulationParams, μ::microstate,wl::WangLandauVars)
-    check_inputs(sim,μ) # tell user the min distance in config and similar things
+    check_inputs(sim,μ,wl) # tell user the min distance in config and similar things
     print_simulation_params(sim)
     print_microstate(μ,true)
 end
