@@ -18,7 +18,7 @@ export euclidean_distance, min_config_distance, euclidean_distance_squared_pbc, 
 # lj exports:
 export argon_deBroglie, E_12_LJ, E_12_frac_LJ, potential_1_normal, potential_1_frac, λ_metropolis_pm1
 # thermo stuff:
-export correct_Q
+export correct_logQ
 
 
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars,c::SimCache)
@@ -41,15 +41,15 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
         if wl.iters % 1000 ==0 # check flatness only every 1000 cycles
             min = minimum(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ]) # the zeroth particle sits in wl.H_λN[:,1] - the 1 indexed column
             if min ≥  1000 # this is our flatness criteria
-                #save_wanglandau_jld2(wl,sim, "wl_checkpoint_before_rezeroing.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
-                wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
+                save_wanglandau_jld2(wl,sim, "wl_checkpoint_before_rezeroing.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
                 wl.logf = 0.5*wl.logf
                 println(progress_log,"New WL epoch!, now at ",wl.logf," and the time is ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS")) # MOSTLY FOR DEBUGGING AND MONITORING LONG CALCULATIONS
                 flush(progress_log)
+                wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
             end
             if wl.iters % 100_000 ==0 # save checkpoint every 100,000 moves 
-                save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
-                save_microstate_jld2(μ,sim, "microstate_checkpoing.jld2")
+                #save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+                save_microstate_jld2(μ,sim, "microstate_checkpoint.jld2")
             end
         end #flatness/printing
     end # while logf ≥ logf_convergence_threshold
@@ -60,7 +60,7 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
     wl.translation_moves_proposed += 1
 
     c.ζ_idx = rand(sim.rng,1:(μ.N+1)) # randomly pick atom to move, includes fractional particle
-    if c.ζ_idx  < μ.N # move normal particle    
+    if c.ζ_idx ≤ μ.N # move normal particle    
         c.ri_proposed_box .= μ.r_box[c.ζ_idx]
         translate_by_random_vector!(c.ri_proposed_box, wl.δr_max_box, sim.rng,c) # Trial move to new position (in box=1 units), this used to be ri_proposed_box before cache
         pbc_wrap!(c.ri_proposed_box)   # PBC
@@ -85,6 +85,7 @@ function translation_move!(sim::SimulationParams,μ::microstate,wl::WangLandauVa
         pbc_wrap!(c.ri_proposed_box)   # PBC
         if μ.λ == 0 # auto accept because if λ =0 , translational move of the fractional particle doesn't change energy
             μ.r_frac_box .= c.ri_proposed_box
+            c.μ_prop.r_frac_box .= c.ri_proposed_box
             wl.translation_moves_accepted += 1
         else 
             E_proposed = potential_1_frac(μ.r_box, c.ri_proposed_box  ,μ.λ ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared )

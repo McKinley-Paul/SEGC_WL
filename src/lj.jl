@@ -151,7 +151,7 @@ function  λ_metropolis_pm1(μ::microstate,
         elseif μ.λ ==0 && μ_prop.λ > 0
             V_Λ_prefactor = sim.V_σ^(μ_prop.N+1 - μ.N) * sim.Λ_σ^(3*μ.N - 3*(μ_prop.N+1))
         elseif μ.λ > 0 && μ_prop.λ == 0 
-            V_Λ_prefactor = sim.V_σ^(μ_prop.N - μ.N - 1) * sim.Λ_σ^(3*(μ.N+1)-3*μ_prop.N)
+           V_Λ_prefactor = sim.V_σ^(μ_prop.N - μ.N - 1) * sim.Λ_σ^(3*(μ.N+1)-3*μ_prop.N)
         end
 
         # now we compute the exponential part of the criterion having to do with the configurational potential energy
@@ -168,7 +168,8 @@ function  λ_metropolis_pm1(μ::microstate,
             # so E_Old = E_old_frac interaction with all others and E_new = E_new_full_particle interaction with all others
             factorial_prefactor = 1/μ_prop.N # only works for ±1
             E_old = potential_1_frac(μ.r_box,μ.r_frac_box,  μ.λ   ,sim.λ_max,μ.N,sim.L_squared_σ,sim.r_cut_squared_box,  μ.ϵ_ξ,μ.σ_ξ_squared )
-            i = length(μ_prop.r_box)
+            #i = length(μ_prop.r_box) # @@@@@@@@ POSSIBLE BUG  always picking Nmax @@@@@@@@@@@@@@
+            i = μ_prop.N ############ 
             E_proposed = potential_1_normal(μ_prop.r_box , μ_prop.r_box[i],i,μ_prop.r_frac_box,μ_prop.λ,sim.λ_max,μ_prop.N,sim.L_squared_σ,sim.r_cut_squared_box, μ_prop.ϵ_ξ,μ_prop.σ_ξ_squared)
                     
         elseif μ.N > μ_prop.N # particle destroyed so λ = 0 and λ_proposed = 99

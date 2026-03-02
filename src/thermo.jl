@@ -1,7 +1,8 @@
 # This file contains functions general to doing thermodynamics or stat mech including some thermodynamic post processing of the SEGC-WL found configurational integrals 
+# also contains some functions to do analysis
 #  ✅  == checked in /test
 
-function correct_Q(wl::WangLandauVars)::Array{Float64}   
+function correct_logQ(wl::WangLandauVars)::Array{Float64}   
     #❌ This function does not take into account wl.N_min yet, assumes N_min==0 ❌
     #= after doing WL, we solve only for the simplified expanded canonical partition functions  Q(λ,N|V,T) up to a multiplicative constant
      this function solves for this constant and returns the true Q's by recognizing that we know 
@@ -19,3 +20,4 @@ function correct_Q(wl::WangLandauVars)::Array{Float64}
     logQtrue = wl.logQ_λN[1,:] .+ logC
     return(logQtrue)
 end #correct_Q
+

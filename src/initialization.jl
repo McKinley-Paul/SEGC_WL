@@ -104,14 +104,18 @@ function init_WangLandauVars(sim::SimulationParams,δr_max_box::Float64 = typema
 end
 
 
+
 function copy_microstate!(dest::microstate, src::microstate)
     dest.N = src.N
     dest.λ = src.λ
-
-    dest.r_box .= src.r_box  # Copy into existing array (no allocation)
-    
-    dest.r_frac_box .= src.r_frac_box  # This is always 3-element, so safe
-
+    for i in eachindex(dest.r_box)
+        dest.r_box[i] .= src.r_box[i]  # deep copy each MVector's contents
+    end
+    # previously this function had:  dest.r_box .= src.r_box  # Copy into existing array (no allocation)
+    #The .= operator on a Vector does element-wise assignment. For Vector{MVector{3,Float64}}, dest.r_box[i] = src.r_box[i]
+    # makes dest.r_box[i] point to the same MVector object as src.r_box[i]. This was the source of a major bug as This behavior means c.μ_prop.r_box and μ.r_box share the same MVector objects after initialization!
+    # thus we must deep copy  element wise  as above
+    dest.r_frac_box .= src.r_frac_box
     dest.ϵ_ξ = src.ϵ_ξ
     dest.σ_ξ_squared = src.σ_ξ_squared
 end
@@ -211,6 +215,8 @@ function check_inputs(s::SimulationParams,μ::microstate,wl::WangLandauVars)
     if μ.N != s.N_max
         throw(ArgumentError("Input mismatch: input config has $(μ.N) atoms but N_max is $(s.N_max), you have to start the simulation in the densest configuration"))
     end
+
+    flush(stdout)
 
 end #check_inputs
 

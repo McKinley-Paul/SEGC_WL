@@ -1,0 +1,3 @@
+0.07509097762269842
+Minimum distance in box units (L_box=1) between particles in the initial configuration is: 0.236 between particles 1 and 2
+This is compared to length of σ in box units which is: 0.125

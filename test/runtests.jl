@@ -348,12 +348,12 @@ println("")
             maxiter=100_000_000)
         μstate = init_microstate(sim=sim,filename=input_path)
 
-        wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
+        wl = init_WangLandauVars(sim)
         cache = init_cache(sim,μstate)
 
         run_simulation!(sim,μstate,wl,cache)
         # post_run(sim,μstate,wl)
-        logQ = correct_Q(wl)
+        logQ = correct_logQ(wl)
         logQ_N1 += logQ[2]
         logQ_N2 += logQ[3]
     end
@@ -395,11 +395,11 @@ end
             save_directory_path= @__DIR__ , 
             maxiter=100_000_000)
         μstate = init_microstate(sim=sim,filename=input_path)
-        wl = init_WangLandauVars(sim.λ_max,sim.N_max,sim.L_σ)
+        wl = init_WangLandauVars(sim)
         cache = init_cache(sim,μstate)
 
         run_simulation!(sim,μstate,wl,cache)
-        logQ = correct_Q(wl)
+        logQ = correct_logQ(wl)
         for ii in 1:5
             logQ_avg[ii] += logQ[ii]
         end
