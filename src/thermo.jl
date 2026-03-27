@@ -1,6 +1,8 @@
 # This file contains functions general to doing thermodynamics or stat mech including some thermodynamic post processing of the SEGC-WL found configurational integrals 
 # also contains some functions to do analysis
 #  ✅  == checked in /test
+using ArbNumerics  # Julia's arbitrary precision library — add with `Pkg.add("ArbNumerics")`
+using SpecialFunctions
 
 function correct_logQ(wl::WangLandauVars)::Array{Float64}   
     #❌ This function does not take into account wl.N_min yet, assumes N_min==0 ❌
@@ -19,5 +21,33 @@ function correct_logQ(wl::WangLandauVars)::Array{Float64}
     logC = -1*wl.logQ_λN[1,1] # natural log of multiplicative constant 
     logQtrue = wl.logQ_λN[1,:] .+ logC
     return(logQtrue)
-end #correct_Q
+end #correct_logQ
 
+
+function ideal_gas_logQNVT(N::Int,V::Float64,Λ::Float64)::Float64
+    #= computes the ideal gas partition function Q(N,V,T):
+
+            Q(N,V,T) = 1/N! (V/Λ^3)^N 
+
+        using Stirling's approximation:
+
+            logQ(N,V,T) = N log (V/Λ^3) + log(1/N!)
+                        = N log (V/Λ^3) + log(1) - log(N!)
+                        now stirling approx:
+                        = N log (V/Λ^3) - N log(N) - N
+
+        make sure that V and Λ^3 have the same units!!!
+
+        Inputs: 
+        - N = number of particles
+        - V = volume
+        - Λ = thermal debroglie wavelength: Λ = (h^2/[2 π m k_B T])^1/2
+        Outputs:
+        - logQ_id = ideal gas partition function
+    =# 
+    if N == 0
+        return(0.0) #  Q(N=0) = (1/0!) (V/Λ^3)^0 = 1*1 thus log(1) = 0
+    end
+    logQ_id = N*log(V/ (Λ^3) ) - N*log(N) - N 
+    return(logQ_id)
+end # ideal_gas_logQNVT

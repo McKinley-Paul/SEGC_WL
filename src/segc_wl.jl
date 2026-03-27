@@ -18,7 +18,7 @@ export euclidean_distance, min_config_distance, euclidean_distance_squared_pbc, 
 # lj exports:
 export argon_deBroglie, E_12_LJ, E_12_frac_LJ, potential_1_normal, potential_1_frac, λ_metropolis_pm1
 # thermo stuff:
-export correct_logQ
+export correct_logQ, ideal_gas_QNVT
 
 
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars,c::SimCache)
@@ -42,10 +42,14 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
             min = minimum(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ]) # the zeroth particle sits in wl.H_λN[:,1] - the 1 indexed column
             if min ≥  1000 # this is our flatness criteria
                 save_wanglandau_jld2(wl,sim, "wl_checkpoint_before_rezeroing.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+                
                 wl.logf = 0.5*wl.logf
                 println(progress_log,"New WL epoch!, now at ",wl.logf," and the time is ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS")) # MOSTLY FOR DEBUGGING AND MONITORING LONG CALCULATIONS
                 flush(progress_log)
+
                 wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
+                save_wanglandau_jld2(wl,sim, "wl_checkpoint_after_zeroing.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+
             end
             if wl.iters % 100_000 ==0 # save checkpoint every 100,000 moves 
                 #save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")

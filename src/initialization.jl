@@ -247,6 +247,7 @@ function print_simulation_params(params::SimulationParams,start::Bool=true)
     @printf("V = %.4f σ³\n", params.V_σ)
     @printf("Box Length L = %.4f σ\n", params.L_σ)
     @printf("DeBroglie Λ = %.4f σ\n", params.Λ_σ)
+    @printf("Max Density (N/V [σ^-3]): ρ = %.4f N\n", params.N_max/params.V_σ)
     
     @printf("Nmax = %d\n", params.N_max)
     @printf("Nmin = %d\n", params.N_min)
