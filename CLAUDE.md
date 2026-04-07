@@ -70,7 +70,21 @@ Two MC move types each step (75/25 split):
 - **Translation**: Metropolis accept/reject on ΔE for one particle.
 - **λ-move**: Change coupling by ±1 (fractional particle appears/disappears); acceptance uses the SEGC criterion in `λ_metropolis_pm1` (includes factorial and V/Λ³ prefactors).
 
-Wang-Landau updates `logQ_λN` and `H_λN` after every accepted move. Each *epoch* ends when all (λ,N) states are visited ≥ threshold; then `logf → logf/2`. Simulation converges when `logf < 1e-8`.
+Wang-Landau updates `logQ_λN` and `H_λN` after every accepted move.
+
+#### 1/t Wang-Landau update schedule (Pereyra 2007 hybrid)
+
+The current implementation uses a two-phase 1/t WL schedule rather than pure halving to logf < 1e-8:
+
+**Phase 1** (standard WL halving): logf starts at 1 and is halved each epoch. An epoch ends when `min(H_λN) ≥ 1000` over all active (λ,N) bins. After each halving, compute the Monte Carlo time `t = wl.iters / num_active_bins` (where `num_active_bins = (N_max−N_min+1) × (λ_max+1)`). Phase 1 ends and phase 2 begins when `logf ≤ 1/t` — typically around halving 14–17 depending on how hard the state space is to sample.
+
+**Phase 2** (1/t schedule): `logf = num_active_bins / wl.iters` is set continuously each MC step (logf tracks 1/t exactly). No halving or histogram reset occurs. Phase 2 exits — and the simulation terminates — when `min(H_λN) / mean(H_λN) > 0.8` (80% flatness criterion), checked every 1,000,000 steps. `wl.iters` is never reset; it counts total MC steps from the start of the run.
+
+**Why**: Classic pure-halving WL (Desgranges 2012) continues halving until logf < 1e-8 (~26 halvings), doing redundant sweeps after the DoS is already converged. The 1/t schedule eliminates the asymptotic saturation error inherent in fixed-logf WL and exits once the histogram is genuinely flat rather than after an arbitrary number of halvings.
+
+**References**: Pereyra et al., *J. Chem. Phys.* **126**, 124111 (2007); Shchur & Janke, *J. Phys.: Conf. Ser.* **2025** (2019) (tunneling time and histogram-flatness ↔ TMES equivalence).
+
+**Key fields added to `WangLandauVars`**: `phase2::Bool` (false until 1/t crossover), `flat::Bool` (true when 80% flatness reached and simulation exits).
 
 ### Input config format (`.inp`)
 
