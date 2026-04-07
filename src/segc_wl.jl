@@ -26,6 +26,7 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
     log_path = joinpath(sim.save_directory_path, "wl_progress_log.txt")
     progress_log = open(log_path,"a") # for debugging/monitoring long calculations
     println(progress_log,"Starting run_simulation!(), time is ",  Dates.format(now(), "yyyy-mm-dd HH:MM:SS"))
+
     num_active_bins = (sim.N_max - sim.N_min + 1) * (sim.λ_max+1) 
     
     while (wl.flat == false ) && ( wl.iters < sim.maxiter)
@@ -51,8 +52,10 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
                     flush(progress_log)
                 end
 
-                save_microstate_jld2(μ,sim, "microstate_checkpoint.jld2")
-                save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+                if wl.iters % 100_000_000 == 0 # progress log every 100,000,000 moves probably approximately every 10 minutes
+                    println(progress_log,"Phase 2 flatness check: H_λ,N min/mean = ",round(H_min/H_avg*100), " %, total iters: ",wl.iters, " min: ",H_min," ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS")  )
+                    flush(progress_log)
+                end
             end
         end
 
@@ -60,15 +63,13 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
 
         # check when to switch to phase 2:
         if wl.phase2 == false # check if every state has been visited/ tunneling time every move while in phase 1
-            if wl.iters % 10_000 == 0 # check phase 1 flatness only every 10,000 iters            
+            if wl.iters % (1_000 * num_active_bins) == 0  # check phase 1 flatness only every 1_000 monte carlo time as suggested in pereyra       
                 H_min = minimum(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ]) # the zeroth particle sits in wl.H_λN[:,1] - the 1 indexed column
 
-                if H_min ≥  1_000 # checking flatness for phase 1 of algorithm a la Desgranges   
+                if H_min ≥  1 # checking flatness for phase 1 of algorithm in line with Pereyra
                     wl.logf = 0.5*wl.logf
                     println(progress_log,"New WL phase 1 epoch!, now at ",wl.logf," and the time is ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS")) # MOSTLY FOR DEBUGGING AND MONITORING LONG CALCULATIONS
                     flush(progress_log)
-
-                    wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
 
                     monte_carlo_time = wl.iters/num_active_bins 
                     if wl.logf ≤ 1/(monte_carlo_time) # Pererya 2007 phase transition criterion
@@ -77,15 +78,17 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
                         println(progress_log, "That is a monte carlo time of: ", round(monte_carlo_time))
                         flush(progress_log)
                     end
-                end
+                    
+                    wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
 
-                if wl.iters % 1_000_000 ==0 # save checkpoint every 1_000,000 moves 
-                    save_microstate_jld2(μ,sim, "microstate_checkpoint.jld2")
-                    save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
                 end
             end
         end #phase1 -> phase2 check
 
+        if wl.iters % 1_000_000 ==0 # save checkpoint every 1_000,000 moves 
+            save_microstate_jld2(μ,sim, "microstate_checkpoint.jld2")
+            save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+        end
 
     end # while logf ≥ logf_convergence_threshold
     close(progress_log)
