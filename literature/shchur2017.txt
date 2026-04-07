@@ -1,0 +1,713 @@
+PHYSICAL REVIEW E 96, 043307 (2017)
+Control of accuracy in the Wang-Landau algorithm
+L. Yu. Barash,1,2,3 M. A. Fadeeva,2,3 and L. N. Shchur1,2,3
+1Landau Institute for Theoretical Physics, 142432 Chernogolovka, Russia
+2Science Center in Chernogolovka, 142432 Chernogolovka, Russia
+3National Research University Higher School of Economics, 101000 Moscow, Russia
+(Received 18 June 2017; revised manuscript received 21 September 2017; published 18 October 2017)
+TheWang-Landau (WL) algorithm has been widely used for simulations in many areas of physics. Our analysis
+of theWL algorithm explains its properties and shows that the difference of the largest eigenvalue of the transition
+matrix in the energy space from unity can be used to control the accuracy of estimating the density of states.
+Analytic expressions for the matrix elements are given in the case of the one-dimensional Ising model. The
+proposed method is further confirmed by numerical results for the one-dimensional and two-dimensional Ising
+models and also the two-dimensional Potts model.
+DOI: 10.1103/PhysRevE.96.043307
+I. INTRODUCTION
+TheWang-Landau (WL) algorithm [1,2] has been shown to
+be a very powerful tool for directly determining the density of
+states (DOS) and is also quite widely applicable. It overcomes
+some difficulties existing in other Monte Carlo algorithms
+(such as critical slowing down) and allows calculating thermodynamic
+observables, including free energy, over a wide
+temperature range in a single simulation.
+A number of papers investigated statistical errors of the
+DOS estimation, and it was found in [3] that errors reach an
+asymptotic value beyond which additional calculations fail to
+improve the accuracy of the results. Yet it was established
+in [4,5] that the statistical error scales as the square root of
+the logarithm of the modification factor, if the factor is kept
+constant.
+It follows from the results in [3] that there is a systematic
+error of DOS estimation by the WL algorithm [6]. It was also
+confirmed in the case of the two-dimensional Ising model that
+the deviation of the DOS obtained with the WL algorithm
+from the exact DOS does not tend to zero [7,8]. Several
+improvements of the behavior of the modification factor in
+the algorithm, which were shown to overcome the problem of
+systematic error in selected applications, have been suggested
+[7–11].
+There are about 1500 papers that apply the WL algorithm
+and its improvements to particular problems (e.g., to the
+statistics of polymers [12,13] and to the diluted systems
+[14,15], among many others).
+In this paper, we address the question of the accuracy of the
+DOS estimation.We report a method for obtaining information
+on both the convergence of simulations and the accuracy of the
+DOS estimation. We numerically apply our algorithm to the
+one-dimensional and the two-dimensional Isingmodels, where
+the exact DOS is known [16], and to the two-dimensional
+eight-state Potts model, which undergoes a first-order phase
+transition. We also present analytic expressions for the transition
+matrix in the energy spectrum for the one-dimensional
+Ising model.
+Our approach is based on introducing the transition matrix
+in the energy space (TMES), whose elements show the
+frequency of transitions between energy levels during the WL
+random walk in the energy space. Its elements are influenced
+by both the random process of choosing a new configurational
+state and the WL probability of accepting the new state.
+We consider a chain of random updates (e.g., flips of
+randomly chosen spins for the Ising model) of a system
+configuration. Each of the updates is accepted with unitary
+probability. This random walk in the configurational space
+is a Markov chain. Its invariant distribution is uniform, i.e.,
+the probabilities of all states of the physical system are equal
+to each other. For any pair  A and  B of configurations,
+the probability of an update from  A to  B is equal to the
+probability of an update from  B to  A. Hence, the detailed
+balance condition is satisfied. Therefore,
+g(Ek)P(Ek,Em) = g(Em)P(Em,Ek), (1)
+where g(E) is the true DOS and P(Ek,Em) is a probability
+of one step of the random walk to move from a configuration
+with the energy Ek to any configuration with the energy Em.
+We introduce the notation
+T (Ek,Em) = min
+ 
+1,
+g(Ek)
+g(Em)
+ 
+P(Ek,Em), (2)
+which represents nondiagonal elements of the TMES of the
+WL random walk on the true DOS. Relation (1) can be
+rewritten as T (Ek,Em) = T (Em,Ek). Therefore, the TMES of
+the WL random walk on the true DOS is a symmetric matrix.
+Because the matrix is both symmetric and right stochastic, it
+is also left stochastic. This means that the rates of visiting of
+all energy levels are equal to each other.
+In simulations with a reasonable modification of the WL
+algorithm, the systematic error of determining the DOS
+can be made arbitrarily small. In this case, we find that
+the computed TMES approaches a stochastic matrix as the
+computed DOS approaches the true value. There are several
+interesting conclusions. First, this explains the criterion of
+histogram flatness, which is one of the main features of the
+original WL algorithm [1]. Because the histogram elements
+are equal to sums of columns in the TMES, histogram flatness
+is related to the closeness of the TMES to a stochastic matrix.
+Second, it gives a criterion for the proximity of the simulated
+DOS to the true value. We introduce the difference of the
+largest eigenvalue of the calculated TMES from unity as a
+parameter. We show that the parameter is closely connected
+2470-0045/2017/96(4)/043307(7) 043307-1 ©2017 American Physical Society
+L. YU. BARASH, M. A. FADEEVA, AND L. N. SHCHUR PHYSICAL REVIEW E 96, 043307 (2017)
+with the deviation of the DOS from the true value.We confirm
+numerically that the deviation of the DOS from the true value
+decays in time in the same manner as our parameter decays.
+We are not aware of any other method for determining the
+accuracy of a WL simulation without knowing the exact value
+of the DOS.
+The paper is organized as follows. In Sec. II we describe
+the variants of the WL algorithm. In Sec. III we introduce
+the TMES and, in particular, we describe the behavior of
+the TMES for the one-dimensional Ising model. In Sec. IV we
+present our main results and discussion, including discussion
+of properties of the TMES, description of the method, and numerical
+results for the one-dimensional and two-dimensional
+Ising models and for the two-dimensional Potts model.
+II. THE ALGORITHMS
+Directly estimating the DOS with theWL algorithm allows
+calculating the free energy as the logarithm of the partition
+function
+Z =
+ NE
+k=1
+g(Ek)e
+−Ek/kBT , (3)
+where g(Ek) is the number of states (density of states) with
+the energy Ek, NE is the number of energy levels, kB is the
+Boltzmann constant, and T is the temperature.
+The main idea of theWL algorithm is to organize a random
+walk in the energy space.We take a configuration of the system
+with the energy Ek, randomly choose an update to a new
+configurationwith the energyEm, and accept this configuration
+with the WL probability min[1,˜g(Ek)/˜g(Em)], where ˜g(E)
+is the DOS approximation. The approximation is obtained
+recursively by multiplying ˜g(Em) by a factor f at each step
+of the random walk in the energy space [17]. Each time that
+the auxiliary histogram H(E) becomes sufficiently flat, the
+parameter f is modified by taking the square root, f :=
+√
+f .
+Each histogram value H(Em) contains the number of moves
+to the energy level Em. The histogram is filled with zeros
+after each modification of the refinement parameter f . It is
+convenient to work with the logarithms of the values S(Ek) :=
+ln ˜g(Ek) and F := ln f (to fit the large numbers into double
+precision variables) and to replace themultiplication ˜g(Em) :=
+f ˜g(Em) with the addition S(Em) := S(Em) + F.
+At the end of the simulation, the algorithm provides only a
+relative DOS. Either the total number of states or the number
+of ground states can be used to determine the normalized DOS.
+It is natural to ask the following three questions:
+(Q1) Which condition for the flatness check is optimal?
+(Q2) How does the histogram flatness influence the convergence
+of the DOS estimation?
+(Q3) Is the choice of the square root rule to modify the
+parameter f optimal?
+A practical answer to question Q1 was given in the
+original algorithm [1]: keep the flatness within the accuracy
+of about 20%. Choosing an accuracy between 1% and 20% is
+sometimes useful [18] but can result in a substantial increase of
+the simulation time [2]. Ananswer to questionQ3was obtained
+in two independent works [7] and [9], which introduced
+modifications of theWL algorithm, theWL-1/t algorithm and
+the stochastic approximationMonte Carlo (SAMC) algorithm,
+respectively.
+There are two phases of the WL-1/t algorithm [7]. The
+first phase is similar to the WL algorithm except that every
+test of the histogram flatness is replaced with a simpler check:
+Is H(E)  = 0 for all E? The algorithm enters its second phase
+if F   NE/t, where t is the simulation time measured as the
+number of attempted spin flips. For t > ts
+, the histogram is no
+longer checked and F is updated as F = NE/t at each step.
+Here ts is the simulation time when the WL-1/t algorithm
+enters the second phase.
+Both modified WL algorithms exhibit the same long-range
+behavior of the refinement parameter F proportional to 1/t
+for long simulation times [9,10]. This is natural due to the
+following conditions of the convergence:
+ ∞
+  t=1 F(t ) = ∞and ∞
+t=1 F(t )ζ < ∞for some ζ ∈ (1,2) [9,10]. The SAMC algorithm
+has an additional parameter t0, which is the simulation
+time when the algorithm enters its second phase. Obtaining
+the appropriate value of t0 can be quite cumbersome because
+the rule of thumb for choosing t0 given in [9] is violated even
+by the 128 × 128 Ising model [19]. The WL-1/t algorithm
+and its further improvements [20–22] seem to perform more
+reliably. Here, we use the WL-1/t algorithm, although the
+main obtained results are qualitatively independent of the
+modification choice.
+III. TRANSITION MATRIX IN THE ENERGY SPACE
+We calculate theTMESfor theWLrandomwalk as follows.
+The elements of the TMES T˜ (Ek,Em) are probabilities for the
+WLrandomwalk to move from a configurationwith the energy
+Ek to a configuration with the energy Em. For simplicity, we
+consider the case of the Ising model with periodic boundary
+conditions and the energy E = −
+ 
+ i,j   σiσj , where the sum
+ranges pairs of neighboring spins and σi = ±1. The number
+of energy levels accessible for the WL random walk is NE =
+L/2 + 1 for d = 1 and NE = L2 − 1 for d = 2, where the
+even integer L is the linear size of the hypercubic lattice and d
+is the lattice dimension. A WL random move cannot increase
+or decrease the energy of the configuration by more than d
+energy levels, and every column and every row of the TMES
+therefore contains no more than 1+2d nonzero elements. The
+nondiagonal elements of T˜ (Ek,Em) can be represented as
+T˜ (Ek,Em) = min
+ 
+1,
+˜g
+(Ek)
+˜g
+(Em)
+ 
+P(Ek,Em), (4)
+where k  = m. In general, the structure of the probability
+P(Ek,Em) depends on both the system dimension and the
+local lattice properties and is rather complicated.
+In the case of the one-dimensional Ising chain of L spins
+with periodic boundary conditions, the probability to change
+energy from Ek to Em in a WL random move is
+T (Ek,Em) = min
+ 
+1,
+g(Ek)
+g(Em)
+   2k
+i=0
+NiQEk→Em
+i
+g(Ek)
+, (5)
+where k  = m. Here k is the number of couples of domain
+walls in the configuration, which determines the energy level
+Ek = −
+ 
+L
+j=1 σjσj+1 = −L + 4k, Ni (k,L) is the number of
+configurations where i domains consist of only one spin and
+043307-2
+CONTROL OF ACCURACY IN THE WANG-LANDAU ALGORITHM PHYSICAL REVIEW E 96, 043307 (2017)
+2k−i domains consist of more than one spin, and QEk→Em
+i (L)
+is the probability that a single spin flip moves the system to
+the energy Em from such configurations. Occupations of the
+energy levels of the chain are expressed in terms of binomial
+coefficients as g(Ek) = 2C2k
+L because there are exactly C2k
+L
+ways to arrange the 2k domain walls. Therefore, partition
+function (3) is
+ZL = 2
+ L/2
+k=0
+C2k
+L e(L−4k)/(kBT ). (6)
+The detailed analytic expressions for Ni and Qi are
+presented in Appendix B. It follows that
+T (Ek,Ek+1) = T (Ek+1,Ek) = C2k
+L−2
+max
+ 
+C2k
+L ,C2k+2
+L
+  . (7)
+Equation (7) can be understood as follows. The probability
+of the system to change energy from Ek to Ek+1 due to a spin
+flip is equal to the probability that there are no domain walls
+adjacent to the spin. Therefore, P(Ek,Ek+1) = C2k
+L−2/C2k
+L .
+Similarly, P(Ek+1,Ek) = C2k
+L−2/C2k+2
+L . We hence obtain (7).
+IV. RESULTS AND DISCUSSION
+A. TMES and the accuracy of the DOS estimation
+The convergence of theWL-1/t algorithm follows from the
+arguments presented in [20]. Therefore, there is a final stage of
+each simulation, where the normalized DOS remains almost
+the same and is close to the limiting one.
+We note that the condition that F(t ) is much smaller than
+1 in itself does not guarantee that the algorithm is already in
+its final stage, because it follows from
+ ∞
+t=1 F(t )=∞ that
+a substantial cumulative change of the DOS due to a long
+simulation time is possible. At the same time, a large value of
+F(t ), resulting in a rapid increase of the calculated DOS, does
+not guarantee a rapid increase of the normalized DOS.
+The normalized DOS remains almost the same during a
+long simulation time of the final stage. Therefore, the rate of
+increase of the logarithm of the non-normalized DOS is nearly
+the same for all energies. The behavior of the algorithm is close
+to a Markov chain in the final stage, and the TMES remains
+almost the same. The invariant distribution of the Markov chain
+has the property that all energy levels are almost equiprobable,
+while different configurations having the same energy may
+have different probabilities. Therefore, the TMES is close to a
+stochastic matrix in the final simulation stage. The following
+proposition also holds: if the TMES is close to a stochastic
+matrix, then the obtained normalized DOS is close to the true
+DOS (see details in Appendix A).
+The first phase of the WL-1/t algorithm aims to obtain the
+first crude approximation for the DOS, while the aim of the
+second phase (in which the factor F is updated as F(t ) = NE/t
+at each step) is to converge to the true DOS. Both the histogram
+flatness test in the original WL algorithm and the test whether
+all energies have been visited in the WL-1/t modification are
+quickly passed in the final stage of the calculation because
+all energies are almost equally probable. A much longer
+simulation time is required to satisfy these tests in the early
+calculation stage, when the probabilities of energy levels differ
+substantially.
+B. The control parameter
+The largest eigenvalue of any stochastic matrix is equal to
+1, and we therefore propose to use the difference of the largest
+eigenvalue of the TMES from unity computed during the final
+stage of the WL simulation as a criterion for the proximity of
+the DOS to the true value.
+We estimate the elements of the TMES in simulations
+as follows. The auxiliary matrix U(Ek,Em) is initially filled
+with zeros. The element U(Ek,Em) is increased by unity after
+every WL move from a configuration with the energy Ek to a
+configuration with the energy Em. During the simulations, we
+compute the normalized matrix T˜ (Ek,Em) = U(Ek,Em)/ ˜H ,
+where ˜H =
+ 
+k,m U(Ek,Em)/NE. The obtained matrix T˜
+approaches the stochastic matrix T in the final stage of
+calculation. The difference of the largest eigenvalue λ1 of T˜
+from unity gives the control parameter δ = |1 − λ1|.
+There are many algorithms for computing the largest
+eigenvalue of a matrix, and almost all are suitable for
+calculating δ.We used the powermethod, also known as power
+iteration or von Mises iteration [23]. The algorithm does not
+compute a matrix decomposition, so it is quite efficient for
+(a) (b)
+FIG. 1. Dependence of δ (solid line) and (dotted line) on theMonte Carlo time t for the WL-1/t algorithm applied to the one-dimensional
+Ising model with L = 128 (left panel) and to the two-dimensional Ising model on the square lattice of linear size L = 16 (right panel) and with
+periodic boundary conditions. The vertical dashed line marks the average value of ts .
+043307-3
+L. YU. BARASH, M. A. FADEEVA, AND L. N. SHCHUR PHYSICAL REVIEW E 96, 043307 (2017)
+(a) (b)
+FIG. 2. Relative standard deviations σ(δ)/δ (solid line) and σ( )/  (dotted line) as functions of t for the simulations described in Fig. 1:
+σ(δ) and σ( ) are standard deviations of the averaged values δ and   obtained using 60 independent runs of the algorithm. Insets: σ(δ) (solid
+line) and σ( ) (dotted line) as functions of t .
+large sparse matrices. It is terminated when a desired accuracy
+of the eigenvector approximation is achieved; the eigenvalue
+estimate is then found by applying the Rayleigh quotient
+to the resulting eigenvector. The method can be used if λ1
+is the eigenvalue of largest absolute value and |λ1/λ2|  = 1,
+where λ1, . . . ,λNE is the list of the matrix eigenvalues ordered
+so that |λ1|   |λ2|   |λ3|   · · ·   |λNE
+|. The absolute value
+of any eigenvalue of any stochastic matrix is less than or
+equal to unity, therefore, the power method is applicable for
+estimating δ in the final stage of the WL-1/t algorithm. It
+is known that |λ(k) − λ1| = O(|λ2/λ1|2k), where λ(k) is the
+approximation for λ1 obtained after k iterations [24], so the
+error asymptotically decreases by a factor of |λ1/λ2|2 at each
+iteration.
+The TMES is typically a sparse matrix, and its storage
+usually requires only O(NE) of memory. The matrix-vector
+multiplications are performed very efficiently if the matrix is
+sparse, so each iteration of the power method requires only
+O(NE) operations in this case. Software libraries such as
+VIENNACL [25] contain the implementation of the power
+method for sparse matrices. The power method may require
+many iterations if |λ1/λ2| ≈ 1. However, we note that the
+eigenvalue needs to be calculated only occasionally. For
+example, in our simulations, we calculate δ only once for each
+integer n, where n   100 logt < n+ 1. Such a simulation applies
+the power method only several thousands of times during
+a WL-1/t calculation with 1013 spin flips, so the computing
+time used for the eigenvalue calculation is negligible.
+C. The histogram flatness
+We can calculate the normalized histogram H =
+H(Em)/
+ 
+m H(Em) as H =
+ 
+k
+T˜ (Ek,Em). Hence, the histogram
+flatness condition is equivalent to the property that the
+matrix T˜ is close to stochastic. Thus, the histogram flatness is
+closely connected at the final simulation stage of the WL-1/t
+algorithm with the proximity to the true DOS.
+For the originalWLalgorithm, there is no guarantee that the
+rate of increase of the logarithm of the non-normalized DOS
+is the same for all energies in the final stage of the calculation
+because the parameter modification rule F := F/2 results in a
+rapid decay of F, and the algorithm hence converges because
+the value of F is negligible. The histogram flatness check is
+performed with a finite accuracy such as several percent,which
+results in a finite accuracy of the calculated DOS. The choice
+of high accuracy in the flatness criterion can result in a slow
+convergence and a very long simulation time [2].
+D. Normalizing the DOS
+Normalizing the DOS only at the end of the simulation was
+suggested in the original papers [1,7,9]. We note that this can
+limit the accuracy of the estimated DOS. For example, we consider
+the one-dimensional Ising model with L = 512, where
+the transition to the second phase of the WL-1/t algorithm
+occurs at t ∼ ts = 2 × 1010, where S(E,ts ) ∼ 107. After only
+several hours of the calculation, we have t = 5 × 1011 and
+F = NE/t = 5 × 10−10. The operation S(E) := S(E) + F is
+then beyond the capabilities of double-precision floating-point
+variables because there is already a 17 orders of magnitude
+difference between S(E) and F. Hence, the operation is in
+fact not performed and the DOS is not updated after that.
+Therefore, we recommend normalizing the calculated DOS
+FIG. 3. Dependence of δ (solid line) and ˜  (dotted line) on the
+Monte Carlo time t for the WL-1/t algorithm applied to the twodimensional
+Potts model with q=8 spin states and with periodic
+boundary conditions. The lattice size is L = 32 and M = 40. Here,
+˜ 
+= 1/NE
+ 
+E
+|[˜S (E,t ) − S0(E)]/S0(E)|, where S0(E) =  S(E,t =
+2.6 × 1012) . The vertical dashed line marks the average value of ts .
+043307-4
+CONTROL OF ACCURACY IN THE WANG-LANDAU ALGORITHM PHYSICAL REVIEW E 96, 043307 (2017)
+(a) (b)
+FIG. 4. Dependence of δ (solid line) and (dotted line) on theMonte Carlo time t for the WL-1/t algorithm applied to the one-dimensional
+Ising model with L = 256 (left panel) and L = 1024 (right panel) and with periodic boundary conditions. The vertical dashed line marks the
+average value of ts .
+more frequently during the simulation. For the simulation
+corresponding to Fig. 1, the calculated DOS is normalized
+every time the values of δ and   are calculated.
+E. Behavior of the control parameter for theWL-1/t algorithm
+The parameter
+  = 1
+NE
+ 
+E
+    
+˜S
+(E,t ) − Sexact(E)
+Sexact(E)
+    
+(8)
+estimates the deviation of the computed DOS ˜g (Ek) from the
+exact DOS g(Ek). Figure 1 shows the behavior of   and δ as a
+function of simulation time t . The overline means that the data
+were obtained by averaging over M independent runs of the
+algorithm to reduce statistical noise, where M = 60 in Fig. 1.
+We note that ˜S (E,t) inEq. (8) corresponds to the normalized
+DOS. Here, we use the normalization ˜S(E,t ) = S(E,t ) −  S,
+where  S = S(Ej ,t ) − Sexact(Ej ) and j is chosen such that
+S(Ej ) = maxk S(Ek). Both the above-mentioned normalization
+to the total number of states and the normalization to the
+number of ground states turn out to give values of   close to
+those presented in Fig. 1. The vertical dashed line marks the
+average value of ts .
+Figure 1 demonstrates the monotonic power-law decrease
+of both the parameters δ and   during the second phase of
+the WL-1/t algorithm. We use the logarithmic scale in both
+axes. A stable power-law decay of the parameter δ reveals the
+convergence of T˜ to a stochastic matrix and can be used as
+a criterion for the convergence of the simulated DOS to the
+exact DOS.
+The fluctuations of the parameters δ and   are shown in
+Fig. 2 for the simulations described in Fig. 1. Figure 2 shows
+σ(δ)/δ and σ( )/  as functions of t . The relative standard
+deviations were obtained using 60 independent runs of the
+algorithm. Therefore, the values in Fig. 2 represent the relative
+magnitudes of the error bars in Fig. 1. It follows from Fig. 2
+that σ(δ) =
+√
+Mσ(δ) and σ( ) =
+√
+Mσ( ) are of the order
+of δ and  , respectively.
+The condition δ(t2)   δ(t1) observed during the second
+algorithm phase should result in satisfying the condition
+ (t2)    (t1), which allows approximating the value of (t1)
+as the deviation between the DOS computed at t = t1 and
+t = t2. This allows estimating the simulation accuracy in the
+case where the DOS of the simulated system is not known
+exactly. In Fig. 3, as an example of such a case, we present
+the results of simulating the two-dimensional Potts model with
+q=8 spin states. The dependence of the parameters δ and ˜  on t
+(a) (b)
+FIG. 5. Dependence of δ (solid line) and (dotted line) on theMonte Carlo time t for the WL-1/t algorithm applied to the two-dimensional
+Ising model with L = 32 (left panel) and L = 64 (right panel) and with periodic boundary conditions. The vertical dashed line marks the
+average value of ts .
+043307-5
+L. YU. BARASH, M. A. FADEEVA, AND L. N. SHCHUR PHYSICAL REVIEW E 96, 043307 (2017)
+(a) (b)
+FIG. 6. Dependence of δ (solid line) and   (dotted line) on the Monte Carlo time t for the original WL algorithm applied to the
+one-dimensional Ising model with L = 32 (left panel) and the two-dimensional Ising model with L = 32 (right panel) and with periodic
+boundary conditions. We use M = 40 in the left panel and M = 1 in the right panel.
+are qualitatively similar to those calculated for the Ising model
+(Fig. 1). Because we do not have an analytic expression for
+the DOS in this case, we calculate the deviation of ˜g(E) using
+the expression ˜  = 1/NE
+ 
+E
+|[˜S (E,t ) − S0(E)]/S0(E)| and
+taking S0(E) = ˜S (E,tf ) for a large value of tf (tf = 2.6 ×
+1012 in Fig. 3). The control parameter δ can thus be used to
+estimate the accuracy of the obtained DOS.
+Very similar results to those shown in Fig. 1 were obtained
+for various values of the lattice size. The calculations were
+performed with L up to 1024 for the one-dimensional Ising
+model and up to 64 for the two-dimensional Ising model.
+Figures 4 and 5 show δ(t ) and  (t ) for several different values
+of the Ising model lattice size L, where M = 40. Figures 1,
+4, and 5 also demonstrate different values of ts , which grows
+with the system size.
+F. Behavior of the control parameter for
+the originalWL algorithm
+Figure 6 shows δ(t ) and  (t ) for the original WL algorithm
+described in [1]. The algorithm was applied to the onedimensional
+and two-dimensional Ising models with L = 32.
+The data in the left panel were obtained by applying the WL
+algorithm to the one-dimensional Ising model and averaging
+over 40 independent runs. The right panel corresponds to a
+single run of theWL algorithm applied to the two-dimensional
+Ising model.
+Therefore, both   and δ saturate for the original WL
+algorithm (see also Sec. IVC). Using the control parameter δ
+thus confirms the systematic error of the originalWLalgorithm
+previously reported in [3,6–8].
+V. CONCLUSION
+We have analyzed properties of the algorithms and of
+the TMES. The TMES of the WL random walk on the
+true DOS is stochastic and symmetric. We present analytic
+expressions for the TMES in the case of the one-dimensional
+Ising model. We improve the WL algorithm based on the
+WL-1/t modification of the original algorithm [7] and propose
+a method for examining the convergence of simulations to
+the true DOS and for controlling the accuracy of the DOS
+calculation. The monotonic power-law decrease of the control
+parameter δ during the second phase of the algorithm reveals
+the convergence of the algorithm, and the values of the control
+parameter can be used to estimate the accuracy of the DOS
+calculations.
+This approach can be generalized to systems with an intitially
+unknown discrete spectrum, where the general procedure
+can be applied for the dynamic change of the TMES. It would
+be interesting to check its applicability to systems with a
+continuous energy spectrum.
+ACKNOWLEDGMENT
+This work is supported by Grant No. 14-21-00158 from the
+Russian Science Foundation.
+APPENDIX A: CONVERGENCE OF THE WL-1/t
+ALGORITHM TO THE TRUE DOS
+We have shown that the TMES T of the WL random walk
+on the true DOS is stochastic, and also that the TMES T˜ is
+close to a stochastic matrix in the final stage of the WL-1/t
+algorithm.
+Here we demonstrate that the obtained normalized DOS is
+close to the true DOS if the TMES T˜ is a stochastic matrix.
+It follows from (4) that
+T˜ (Ek,Em)
+T˜ (Em,Ek)
+= ˜g (Ek)
+˜g
+(Em)
+P(Ek,Em)
+P(Em,Ek)
+, (A1)
+where ˜g (E) is the obtained normalized DOS. Using (1), we
+hence obtain
+T˜ (Ek,Em)
+T˜ (Em,Ek)
+= ηm
+ηk
+, (A2)
+where ηi = g(Ei )/˜g (Ei ) and g(E) is the true DOS. It follows
+from (A2) and the stochasticity of T˜ that
+ηm = ηm
+ 
+k
+T˜ (Em,Ek) =
+ 
+k
+T˜ (Ek,Em)ηk. (A3)
+043307-6
+CONTROL OF ACCURACY IN THE WANG-LANDAU ALGORITHM PHYSICAL REVIEW E 96, 043307 (2017)
+Because the TMES is a stochastic matrix, the rates of visiting
+all energy levels are equal to each other. The values of ˜g(E)
+therefore remain almost the same, and the behavior of the
+algorithm is close to a Markov chain. Moreover, the invariant
+distribution of the Markov chain has the property that all energy
+levels are equiprobable. It follows from (A3) that the values
+ηi/
+ 
+k ηk represent the invariant distribution of the Markov
+chain. Therefore, ηi is independent of i, and the obtained
+normalized DOS is hence close to the true DOS.
+APPENDIX B: EXPRESSIONS FOR Ni AND Qi
+We have the relations
+Ni = L
+k
+Ci
+2kC2k−i−1
+L−2k−1, i= 0,1, . . . ,2k − 1,
+N2k = 2δL,2k, (B1)
+QEk→Ek−1
+i
+= i
+L
+, QEk→Ek
+i
+= 4k − 2i
+L
+,
+QEk→Ek+1
+i
+= L − 4k + i
+L
+, (B2)
+where δL,2k is the Kronecker delta.
+Expression (B1) is derived as follows. We consider the
+circular chain of L−2k spins. We place the first domain wall
+in front of the first spin.We add another 2k−i−1 domain walls
+in the remaining space between the spins; there are C2k−i−1
+L−2k−1
+ways to do this. Therefore, we have L−2k spins and 2k−i
+domain walls, where the first spin of the first domain is the
+first spin of the chain.
+We then add one more spin in every domain. We also add
+i domains consisting of only one spin. There are exactly Ci 2k
+ways to choose i domains among the 2k domains. Each of
+these choices unambiguously defines how to add i domains,
+each consisting of only one spin, to the available 2k−i domains
+of the chain.
+We have thus calculated the number of configurations of
+the circular chain of L spins containing 2k domains such that
+i domains consist of only one spin, 2k−i domains consist of
+more than one spin, and there is a domain wall in front of the
+first spin. This number is Mi = 2Ci 2kC2k−i−1
+L−2k−1.
+When 2k domain walls are placed among the L spins, the
+probability that there is a domainwall in front of the first spin is
+equal to p = 2k/L. Hence, Ni = Mi/p, i.e., we have obtained
+Eq. (B1).
+The justification of Eqs. (B2) is as follows. We have 2k
+domains, where i domains consist of only one spin and 2k−i
+domains consist of more than one spin. To remove a couple
+of domains with just a single spin flip, we must choose one
+of the i spins from the domains consisting of only one spin.
+Therefore, QEk→Ek−1
+i
+= i/L.
+To add a couple of domains with just a single spin flip, we
+must choose a spin that is not a boundary spin of a domain.
+There are L−4k+i spins satisfying this condition because
+there are 2k spins located to the right of a domain wall, 2k
+spins located to the left of a domain wall, and i spins which
+are located with a domain wall on both the right and the left.
+Therefore, QEk→Ek+1
+i
+= (L − 4k + i)/L. Finally, QEk→Ek
+i
+=
+1 − QEk→Ek−1
+i
+− QEk→Ek+1
+i
+= (4k − 2i)/L.
+[1] F. Wang and D. P. Landau, Phys. Rev. Lett. 86, 2050 (2001).
+[2] F. Wang and D. P. Landau, Phys. Rev. E 64, 056101 (2001).
+[3] Q. Yan and J. J. de Pablo, Phys. Rev. Lett. 90, 035701 (2003).
+[4] C. Zhou and R. N. Bhatt, Phys. Rev. E 72, 025701(R) (2005).
+[5] H.W. Lee,Y. Okabe, andD. P. Landau, Comput. Phys. Commun.
+175, 36 (2006).
+[6] In fact, in the very early presentation of the algorithm in the
+Rahman Prize Lecture in 2002, Landau already mentioned the
+systematic error in the DOS estimation.
+[7] R. E. Belardinelli and V. D. Pereyra, Phys. Rev. E 75, 046701
+(2007).
+[8] R. E. Belardinelli and V. D. Pereyra, J. Chem. Phys. 127, 184105
+(2007).
+[9] F. Liang, C. Liu, and R. J. Carroll, J. Am. Stat. Assoc. 102, 305
+(2007).
+[10] F. Liang, J. Stat. Phys. 122, 511 (2006).
+[11] G. Brown, Kh. Odbadrakh, D. M. Nicholson, andM. Eisenbach,
+Phys. Rev. E 84, 065702(R) (2011).
+[12] M. P. Taylor,W. Paul, andK.Binder, J. Chem. Phys. 131, 114907
+(2009).
+[13] S. V. Zablotskiy, V. A. Ivanov, and W. Paul, Phys. Rev. E 93,
+063303 (2016).
+[14] A. Malakis, A. Peratzakis, and N. G. Fytas, Phys. Rev. E 70,
+066128 (2004).
+[15] N. G. Fytas and P. E. Theodorakis, Eur. Phys. J. B 86, 30
+(2013).
+[16] P. D. Beale, Phys. Rev. Lett. 76, 78 (1996).
+[17] If the new configuration is not accepted, then the configuration
+is left unchanged, and the step is counted as the move to the
+energy Ek , i.e., ˜g(Ek) is multiplied by the factor f .
+[18] T. Wüst and D. P. Landau, J. Chem. Phys. 137, 064903
+(2012).
+[19] S. Schneider, M. Mueller, and W. Janke, Comput. Phys.
+Commun. 216, 1 (2017).
+[20] C. Zhou and J. Su, Phys. Rev. E 78, 046705 (2008).
+[21] A. D. Swetnam and M. P. Allen, J. Comput. Chem. 32, 816
+(2011).
+[22] T. Wüst and D. P. Landau, Phys. Rev. Lett. 102, 178101
+(2009).
+[23] R. von Mises and H. Pollaczek-Geiringer, Praktische Verfahren
+derGleichungsauflösung, Z. Angew. Math.Mech. 9, 152 (1929).
+[24] S. Börm and C. Mehl, Numerical Methods for Eigenvalue
+Problems (Walter De Gruyter, Berlin/Boston, 2012).
+[25] K. Rupp et al., SIAM J. Sci. Comput. 38, S412 (2016).

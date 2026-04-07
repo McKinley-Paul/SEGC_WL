@@ -89,6 +89,9 @@ mutable struct WangLandauVars
     λ_moves_accepted::Int64
     iters::Int64 # total number of monte carlo moves thus far
     δr_max_box::Float64
+    phase2::Bool
+    flat::Bool # set to true when the condition for flatness is met 
+
 end
 
 function init_WangLandauVars(sim::SimulationParams,δr_max_box::Float64 = typemax(Float64))::WangLandauVars
@@ -103,7 +106,7 @@ function init_WangLandauVars(sim::SimulationParams,δr_max_box::Float64 = typema
     H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
     logQ_λN=zeros(Float64,sim.λ_max+1,sim.N_max+1) # has λ_max + 1 because λ=0 goes in row 1, row 2  -> λ = 1 ... , row λ_max+1 -> λ = λ_max .. similar logic for N, N=0 goes in column 1, N_max goes in column (N_max + 1)
     
-    wl = WangLandauVars(logf,H_λN,logQ_λN,0,0,0,0,0,δr_max_box)
+    wl = WangLandauVars(logf,H_λN,logQ_λN,0,0,0,0,0,δr_max_box,false,false)
     return(wl)
 end
 

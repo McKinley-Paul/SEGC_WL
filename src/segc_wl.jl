@@ -23,12 +23,11 @@ export correct_logQ, ideal_gas_logQNVT, ideal_gas_logQ_loggamma
 
 
 function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVars,c::SimCache)
-    log_path = joinpath(sim.save_directory_path, "wl_progress_log.txt")
-    progress_log = open(log_path,"a") # for debugging/monitoring long calculations
-
-    f_convergence_threshold = exp(10^(-8)) # Desgranges paper convergence criterion has a typo, this is from Original 2001 Landau paper which is presumably what Desgranges et. al. meant
-    logf_convergence_threshold = log(f_convergence_threshold)
-    while (wl.logf ≥ logf_convergence_threshold ) && ( wl.iters < sim.maxiter)
+    # log_path = joinpath(sim.save_directory_path, "wl_progress_log.txt")
+    # progress_log = open(log_path,"a") # for debugging/monitoring long calculations
+    num_active_bins = (sim.N_max - sim.N_min + 1) * (sim.λ_max+1) 
+    
+    while (wl.flat == false ) && ( wl.iters < sim.maxiter)
         ζ = rand(sim.rng)
         if ζ < 0.75                         # propose translational moves 75% of the time 
             translation_move!(sim,μ,wl,c)
@@ -36,31 +35,47 @@ function run_simulation!(sim::SimulationParams, μ::microstate,wl::WangLandauVar
             λ_move!(sim,μ,wl,c)
         end
 
+        if wl.phase2 == true # change logf every move in phase 2
+            wl.logf = num_active_bins/wl.iters # same as 1/t= 1/(wl.iters/num_active_bins)  wl.iters/num_active bins is "monte carlo time" as described in Pereyra's 2007 article introducing the 1/t algorithm
+            
+            if wl.iters % 1_000_000 == 0 # flatness check and saving every million moves
+                H_min = minimum(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ])
+                H_avg = mean(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ])
+
+                if H_min/H_avg > 0.8 # flatness check, looks like old school Wang Landau 2001 style but actually inspired by Shchur 2017 section IV.C 10.1103/PhysRevE.96.043307
+                    wl.flat = true
+                    println("Flatness criterion reached in phase 2 after ", wl.iters, " total iterations")
+                    println("H_λ,N min/mean = ",round(H_min/H_avg*100), " %" )
+                    println("H_λ,N max = ", maximum(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ]))
+                end
+
+                save_microstate_jld2(μ,sim, "microstate_checkpoint.jld2")
+                save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+            end
+        end
+
         update_wl!(wl,μ)
 
-        # check flatness and save state:
-        if wl.iters % 10_000 ==0 # check flatness only every 1000 cycles
-            min = minimum(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ]) # the zeroth particle sits in wl.H_λN[:,1] - the 1 indexed column
+        # check when to switch to phase 2:
+        if wl.phase2 == false # check if every state has been visited/ tunneling time every move while in phase 1
+            H_min = minimum(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ]) # the zeroth particle sits in wl.H_λN[:,1] - the 1 indexed column
                         
-            # trying out the traditional flatness criterion as suggested by Wang and Landau in 2001
-            # avg = mean(wl.H_λN[:,(sim.N_min+1) : (sim.N_max+1) ])
-            # if min ≥ 0.8*avg # flatness here means that for all possible  H(λ,N) is not less than 80% of the average histogram <H(λ,N)>
-
-            if min ≥  1000 # this is our flatness criteria
-                save_wanglandau_jld2(wl,sim, "wl_checkpoint_before_rezeroing.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
-                
-                wl.logf = 0.5*wl.logf
-                println(progress_log,"New WL epoch!, now at ",wl.logf," and the time is ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS")) # MOSTLY FOR DEBUGGING AND MONITORING LONG CALCULATIONS
-                flush(progress_log)
-
-                wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1)
-                save_wanglandau_jld2(wl,sim, "wl_checkpoint_after_zeroing.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+            if H_min ≥  1 # this is our phase 1 ->  transition criterion based on arguments of Shchur 2019 10.1088/1742-6596/1252/1/012010    
+                # we never have to check min ≥ 1000 because by definition min ≥ 1 must happen before min ≥ 1000 so the only time 
+                # we will change the modification factor is in phase 2            
+                wl.phase2 = true
+                wl.H_λN = zeros(Int64,sim.λ_max+1,sim.N_max+1) # rezero to start out phase 2
+                println("Now entering phase 2! It took ", wl.iters, " monte carlo moves (wl.iters) to get to phase 2!")
+                flush(stdout)
             end
-            if wl.iters % 100_000 ==0 # save checkpoint every 100,000 moves 
-                #save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+
+            if wl.iters % 1_000_000 ==0 # save checkpoint every 1_000,000 moves 
                 save_microstate_jld2(μ,sim, "microstate_checkpoint.jld2")
-        end
-        end #flatness/printing
+                save_wanglandau_jld2(wl,sim, "wl_checkpoint.jld2") # jld2 is quick save binary, to inspect checkpoint, open up julia ipynb and use wl_loaded = load_wanglandau_jld2("checkpoint.jld2")
+            end
+        end #phase1 -> phase2 check
+
+
     end # while logf ≥ logf_convergence_threshold
 end #run_simulation
 
